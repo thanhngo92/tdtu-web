@@ -1,0 +1,304 @@
+:root {
+  /* System Tokens */
+  --primary-color: #0d6efd;
+  --secondary-bg: #f8f9fa;
+  --sidebar-width: 250px;
+  --header-height: 64px;
+  --transition-speed: 0.25s;
+
+  /* Semantic Tokens (Light Default) */
+  --app-bg: #f8f9fa;
+  --card-bg: #ffffff;
+  --text-main: #212529;
+  --border-color: #dee2e6;
+  --sidebar-bg: #ffffff;
+
+  --global-font-size: 16px;
+}
+
+/* ============================================================ 
+   DARK MODE OVERRIDES
+   Applied via body class 'dark-theme'
+   ============================================================ */
+body.dark-theme {
+  --app-bg: #121212;
+  --card-bg: #1e1e1e;
+  --text-main: #f0f0f0;
+  --border-color: #333333;
+  --sidebar-bg: #1e1e1e;
+}
+
+/* ============================================================ 
+   BASE ELEMENT STYLING
+   ============================================================ */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--app-bg);
+  color: var(--text-main);
+  font-size: var(--global-font-size);
+  transition: background-color 0.3s, color 0.3s;
+  overflow-x: hidden;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+
+body.dark-theme ::-webkit-scrollbar-thumb {
+  background: #444;
+}
+
+/* ============================================================ 
+   LAYOUT SHELL (Sidebar + Main)
+   ============================================================ */
+.app-shell {
+  display: flex;
+  min-height: calc(100vh - var(--header-height));
+}
+
+.app-sidebar {
+  width: var(--sidebar-width);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+  padding: 1.5rem 0;
+  flex-shrink: 0;
+  transition: transform var(--transition-speed) ease;
+}
+
+.app-main {
+  flex-grow: 1;
+  padding: 1.5rem;
+  transition: padding var(--transition-speed);
+}
+
+/* ============================================================ 
+   COMPONENTS: SIDEBAR ITEMS
+   ============================================================ */
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  color: var(--text-main);
+  text-decoration: none;
+  border-radius: 0 50px 50px 0;
+  margin-right: 1.5rem;
+  transition: all 0.2s;
+  cursor: pointer;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.sidebar-nav-item:hover {
+  background: rgba(13, 110, 253, 0.08);
+  color: var(--primary-color);
+  opacity: 1;
+}
+
+.sidebar-nav-item.active {
+  background: rgba(13, 110, 253, 0.12);
+  color: var(--primary-color);
+  opacity: 1;
+}
+
+/* ============================================================ 
+   COMPONENTS: NOTE CARDS & GRID
+   ============================================================ */
+.note-grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.note-card-ui {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.note-card-ui:hover {
+  border-color: var(--primary-color);
+}
+
+/* Color Accents (ID 8) */
+[data-note-color="blue"] .note-card-ui {
+  border-top: 4px solid #0d6efd;
+}
+
+[data-note-color="green"] .note-card-ui {
+  border-top: 4px solid #198754;
+}
+
+[data-note-color="yellow"] .note-card-ui {
+  border-top: 4px solid #ffc107;
+}
+
+.note-pinned-ui {
+  border: 2px solid var(--primary-color) !important;
+}
+
+/* ============================================================ 
+   MODALS & OVERLAYS
+   ============================================================ */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  border: 1px solid var(--border-color) !important;
+  max-width: 95vw;
+  box-shadow: none !important;
+}
+
+/* ============================================================ 
+   NAVBAR & SEARCH
+   ============================================================ */
+.navbar {
+  height: var(--header-height);
+  padding: 0;
+  display: flex !important;
+  align-items: center;
+}
+
+.search-container-ui {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.6rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 600px;
+  width: 100%;
+}
+
+.search-container-ui:focus-within {
+  border-color: var(--primary-color);
+}
+
+.search-container-ui input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  outline: none;
+  color: var(--text-main);
+}
+
+/* ============================================================ 
+   FLOATING ACTION BUTTON (FAB)
+   ============================================================ */
+.fab-btn-ui {
+  position: fixed;
+  bottom: 2.5rem;
+  right: 2.5rem;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  border: none;
+  cursor: pointer;
+  z-index: 1000;
+  transition: opacity 0.2s;
+}
+
+.fab-btn-ui:hover {
+  opacity: 0.9;
+}
+
+/* ============================================================ 
+   RESPONSIVE OVERRIDES
+   ============================================================ */
+@media (max-width: 992px) {
+  .app-sidebar {
+    position: fixed;
+    left: -250px;
+    height: 100%;
+    z-index: 2000;
+    border-right: 1px solid var(--border-color);
+  }
+
+  .app-sidebar.mobile-open {
+    left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-main {
+    padding: 1.5rem;
+  }
+
+  .note-grid-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .fab-btn-ui {
+    width: 50px;
+    height: 50px;
+    bottom: 2rem;
+    right: 2rem;
+  }
+}
+
+/* ============================================================ 
+   NEW: ANIMATED SETTINGS SECTIONS
+   ============================================================ */
+.settings-panel-anim {
+  animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.action-btn-ui {
+  padding: 0.4rem 0.75rem !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.action-btn-ui:hover {
+  background-color: rgba(13, 110, 253, 0.08) !important;
+  color: var(--primary-color) !important;
+}
+
+.action-btn-ui.active {
+  background-color: rgba(13, 110, 253, 0.12) !important;
+  color: var(--primary-color) !important;
+  font-weight: 600;
+}
