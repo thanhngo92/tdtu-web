@@ -71,6 +71,17 @@ class NoteService
 
     public function updateNote($id, $userId, $data)
     {
+        $note = $this->noteModel->getById($id, $userId);
+        if (!$note) {
+            throw new Exception('Note not found', 404);
+        }
+
+        $isOwner = (int)$note['user_id'] === (int)$userId;
+        $canEdit = $isOwner || ($note['permission'] ?? null) === 'edit';
+        if (!$canEdit) {
+            throw new Exception('You do not have permission to edit this note', 403);
+        }
+
         $title = $data['title'] ?? '';
         $content = $data['content'] ?? '';
         $noteColor = $data['noteColor'] ?? null;
@@ -94,6 +105,12 @@ class NoteService
         $note = $this->noteModel->getById($id, $userId);
         if (!$note) {
             throw new Exception('Note not found', 404);
+        }
+
+        $isOwner = (int)$note['user_id'] === (int)$userId;
+        $canDelete = $isOwner || ($note['permission'] ?? null) === 'edit';
+        if (!$canDelete) {
+            throw new Exception('You do not have permission to delete this note', 403);
         }
 
         if (!empty($note['is_locked'])) {

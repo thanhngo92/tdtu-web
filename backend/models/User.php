@@ -108,18 +108,21 @@ class User
 
     public function activateAccount($token)
     {
+        $currentTime = date('Y-m-d H:i:s');
+
         $sql = "UPDATE {$this->table}
                 SET is_activated = 1,
                     activation_token = NULL,
                     activation_expires = NULL
                 WHERE activation_token = :token
                   AND activation_expires IS NOT NULL
-                  AND activation_expires >= NOW()";
+                  AND activation_expires >= :current_time";
 
         $stmt = $this->conn->prepare($sql);
 
         $stmt->execute([
-            ':token' => $token
+            ':token' => $token,
+            ':current_time' => $currentTime
         ]);
 
         return $stmt->rowCount() > 0;
@@ -145,16 +148,19 @@ class User
 
     public function findByResetToken($token)
     {
+        $currentTime = date('Y-m-d H:i:s');
+
         $sql = "SELECT *
                 FROM {$this->table}
                 WHERE reset_token = :reset_token
                   AND reset_expires IS NOT NULL
-                  AND reset_expires >= NOW()
+                  AND reset_expires >= :current_time
                 LIMIT 1";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([
-            ':reset_token' => $token
+            ':reset_token' => $token,
+            ':current_time' => $currentTime
         ]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -162,18 +168,21 @@ class User
 
     public function findByResetOtp($email, $otp)
     {
+        $currentTime = date('Y-m-d H:i:s');
+
         $sql = "SELECT *
                 FROM {$this->table}
                 WHERE email = :email
                   AND reset_otp = :reset_otp
                   AND reset_expires IS NOT NULL
-                  AND reset_expires >= NOW()
+                  AND reset_expires >= :current_time
                 LIMIT 1";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([
             ':email' => $email,
-            ':reset_otp' => $otp
+            ':reset_otp' => $otp,
+            ':current_time' => $currentTime
         ]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC);

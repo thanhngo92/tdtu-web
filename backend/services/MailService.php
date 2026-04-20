@@ -3,14 +3,23 @@
 class MailService
 {
     private string $logFile;
+    private array $config;
 
     public function __construct()
     {
-        $this->logFile = __DIR__ . '/../../emails.log';
+        $this->config = require __DIR__ . '/../config/config.php';
+        $logFile = $this->config['mail']['log_file'] ?? 'emails.log';
+        $this->logFile = $this->resolveLogFile($logFile);
     }
 
     public function send($to, $subject, $body)
     {
+        $mode = $this->config['mail']['mode'] ?? 'log';
+
+        if ($mode !== 'log') {
+            return true;
+        }
+
         // For development, we log emails to a file instead of sending
         $timestamp = date('Y-m-d H:i:s');
         $content = "[$timestamp] TO: $to\nSUBJECT: $subject\nBODY:\n$body\n" . str_repeat("-", 50) . "\n\n";
@@ -25,7 +34,7 @@ class MailService
 
     public function sendActivationEmail($email, $displayName, $token)
     {
-        $appUrl = 'http://localhost:5173'; // Standard Vite dev port
+        $appUrl = rtrim($this->config['app']['frontend_url'] ?? '', '/');
         $link = "$appUrl/activate?token=$token";
         
         $subject = "Activate Your Notes App Account";
@@ -39,7 +48,7 @@ class MailService
 
     public function sendResetPasswordEmail($email, $token, $otp)
     {
-        $appUrl = 'http://localhost:5173';
+        $appUrl = rtrim($this->config['app']['frontend_url'] ?? '', '/');
         $link = "$appUrl/reset-password?token=$token";
         
         $subject = "Reset Your Notes App Password";
@@ -51,5 +60,14 @@ class MailService
                 "If you did not request this, please ignore this email.";
         
         return $this->send($email, $subject, $body);
+    }
+
+    private function resolveLogFile(string $logFile): string
+    {
+        if (preg_match('/^[A-Za-z]:\\\\|^\//', $logFile) === 1) {
+            return $logFile;
+        }
+
+        return __DIR__ . '/../../' . ltrim($logFile, '/\\');
     }
 }
