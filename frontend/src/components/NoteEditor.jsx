@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import noteService from "../services/noteService";
 
 export default function NoteEditor({ note, onClose, onSaveComplete, availableLabels = [] }) {
@@ -7,134 +7,252 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
   const [images, setImages] = useState(note?.images ? [...note.images] : []);
   const [labelIds, setLabelIds] = useState(note?.labelIds ? [...note.labelIds] : []);
   const [isSaving, setIsSaving] = useState(false);
-
+  const [saveMessage, setSaveMessage] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [shareEmail, setShareEmail] = useState("");
   const [shareRole, setShareRole] = useState("read");
+  const [settingsMessage, setSettingsMessage] = useState({ type: "", text: "" });
+  const [collaborationMessage, setCollaborationMessage] = useState("");
 
   const saveTimeoutRef = useRef(null);
+  const syncTimeoutRef = useRef(null);
+  const lastSavedNoteRef = useRef(note ?? null);
 
-  // Auto-save logic
   useEffect(() => {
-    // Skip if identical to original
-    if (note && note.title === title && note.content === content &&
-      JSON.stringify(note.images) === JSON.stringify(images) &&
-      JSON.stringify(note.labelIds) === JSON.stringify(labelIds)) return;
+    setTitle(note ? note.title : "");
+    setContent(note ? note.content : "");
+    setImages(note?.images ? [...note.images] : []);
+    setLabelIds(note?.labelIds ? [...note.labelIds] : []);
+    lastSavedNoteRef.current = note ?? null;
+    setSaveMessage("");
+    setSettingsMessage({ type: "", text: "" });
 
-    // Don't save completely empty new notes
-    if (!note && !title.trim() && !content.trim() && images.length === 0) return;
+    if (note?.permission === "edit") {
+      setCollaborationMessage("Shared note with edit permission. Changes refresh automatically every 3 seconds.");
+    } else {
+      setCollaborationMessage("");
+    }
+  }, [note]);
+
+  const hasLocalChanges = () => {
+    const saved = lastSavedNoteRef.current;
+
+    if (!saved) {
+      return !!title.trim() || !!content.trim() || images.length > 0 || labelIds.length > 0;
+    }
+
+    return !(
+      saved.title === title &&
+      saved.content === content &&
+      JSON.stringify(saved.images ?? []) === JSON.stringify(images) &&
+      JSON.stringify(saved.labelIds ?? []) === JSON.stringify(labelIds)
+    );
+  };
+
+  useEffect(() => {
+    const saved = lastSavedNoteRef.current;
+
+    if (
+      saved &&
+      saved.title === title &&
+      saved.content === content &&
+      JSON.stringify(saved.images ?? []) === JSON.stringify(images) &&
+      JSON.stringify(saved.labelIds ?? []) === JSON.stringify(labelIds)
+    ) {
+      return;
+    }
+
+    if (!note && !title.trim() && !content.trim() && images.length === 0) {
+      return;
+    }
 
     setIsSaving(true);
+    setSaveMessage("Saving...");
 
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
     saveTimeoutRef.current = setTimeout(async () => {
       try {
         const payload = { title, content, images, labelIds };
+
         if (note) {
-          await noteService.updateNote(note.id, payload);
+          const res = await noteService.updateNote(note.id, payload);
+          const savedNote = res?.data ?? null;
+          if (savedNote) {
+            lastSavedNoteRef.current = savedNote;
+            onSaveComplete?.(savedNote);
+          }
         } else {
           const res = await noteService.createNote(payload);
-          if (onSaveComplete && !note) onSaveComplete(res.data); // give back newly created note
+          const createdNote = res?.data ?? null;
+          if (createdNote) {
+            lastSavedNoteRef.current = createdNote;
+            onSaveComplete?.(createdNote);
+          }
         }
+
+        setSaveMessage("All changes saved.");
       } catch (err) {
         console.error("Auto-save failed", err);
+        setSaveMessage("Auto-save failed. Please keep this editor open and try again.");
       } finally {
         setIsSaving(false);
       }
-    }, 1000); // 1s debounce
+    }, 1000);
 
     return () => clearTimeout(saveTimeoutRef.current);
   }, [title, content, images, labelIds, note, onSaveComplete]);
 
+  useEffect(() => {
+    if (!note || note.permission !== "edit" || note.isLocked) {
+      if (note?.permission === "edit" && note?.isLocked) {
+        setCollaborationMessage("Locked shared notes refresh when they are reopened with the password.");
+      }
+      return;
+    }
+
+    let isCancelled = false;
+
+    const pollLatest = async () => {
+      try {
+        const res = await noteService.getNote(note.id);
+        const remoteNote = res?.data ?? null;
+        const saved = lastSavedNoteRef.current;
+
+        if (!remoteNote || !saved || remoteNote.updatedAt === saved.updatedAt) {
+          return;
+        }
+
+        if (!hasLocalChanges() && !isSaving) {
+          setTitle(remoteNote.title);
+          setContent(remoteNote.content);
+          setImages(remoteNote.images);
+          setLabelIds(remoteNote.labelIds);
+          lastSavedNoteRef.current = remoteNote;
+          onSaveComplete?.(remoteNote);
+          setCollaborationMessage("This shared note was refreshed from another editor.");
+        } else {
+          setCollaborationMessage("Another editor has newer changes. Save your work first, then reopen the note to refresh.");
+        }
+      } catch (err) {
+        setCollaborationMessage("Unable to refresh shared changes right now.");
+      } finally {
+        if (!isCancelled) {
+          syncTimeoutRef.current = setTimeout(pollLatest, 3000);
+        }
+      }
+    };
+
+    syncTimeoutRef.current = setTimeout(pollLatest, 3000);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(syncTimeoutRef.current);
+    };
+  }, [note, isSaving, onSaveComplete, title, content, images, labelIds]);
+
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    files.forEach(file => {
+    files.forEach((file) => {
       if (!file.type.startsWith("image/")) return;
+
       const reader = new FileReader();
       reader.onload = (ev) => {
-        setImages(prev => [...prev, ev.target.result]);
+        setImages((prev) => [...prev, ev.target.result]);
       };
       reader.readAsDataURL(file);
     });
   };
 
   const removeImage = (index) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+    setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const toggleLabel = (id) => {
-    setLabelIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    setLabelIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   };
 
   const handleUpdatePassword = async () => {
     if (!note) return;
 
-    // Better Approach: Double password entry validation
     if (passwordInput && passwordInput !== confirmPassword) {
-      alert("New passwords do not match!");
+      setSettingsMessage({ type: "danger", text: "New passwords do not match." });
       return;
     }
 
-    // Better Approach: If changing/removing, first provide current password
     if (note.isLocked && !currentPassword) {
-      alert("Please enter current password to make changes.");
+      setSettingsMessage({ type: "danger", text: "Please enter the current password before changing note security." });
       return;
     }
 
     try {
       if (note.isLocked) {
-        // Verify current password first call
         await noteService.verifyNotePassword(note.id, currentPassword);
       }
 
       await noteService.setNotePassword(note.id, passwordInput || null);
-      alert(passwordInput ? "Password successfully updated!" : "Password protection disabled.");
+      setSettingsMessage({
+        type: "success",
+        text: passwordInput ? "Note password updated successfully." : "Password protection disabled."
+      });
       onClose();
     } catch (err) {
-      alert("Security Error: " + (err.message || "Incorrect current password"));
+      setSettingsMessage({ type: "danger", text: err?.data?.message || err.message || "Security update failed." });
     }
   };
 
   const handleShare = async () => {
-    if (!note || !shareEmail.trim()) return;
+    if (!note || !shareEmail.trim()) {
+      setSettingsMessage({ type: "danger", text: "Please enter a recipient email before sharing." });
+      return;
+    }
+
     try {
       await noteService.shareNote(note.id, shareEmail.trim(), shareRole);
       setShareEmail("");
-      onClose(); // refresh
+      setSettingsMessage({ type: "success", text: "Note shared successfully." });
+      onClose();
     } catch (err) {
-      console.error(err);
+      setSettingsMessage({ type: "danger", text: err?.data?.message || err.message || "Unable to share this note." });
     }
   };
 
   const handleRevokeShare = async (email) => {
     if (!note) return;
+
     try {
       await noteService.revokeShare(note.id, email);
-      onClose(); // refresh
+      setSettingsMessage({ type: "success", text: "Share revoked successfully." });
+      onClose();
     } catch (err) {
-      console.error(err);
+      setSettingsMessage({ type: "danger", text: err?.data?.message || err.message || "Unable to revoke this share." });
     }
   };
 
   return (
     <div className="note-editor border rounded p-3 bg-white mb-4 shadow-sm position-relative">
+      {collaborationMessage && (
+        <div className="alert alert-secondary py-2 px-3 small mb-3">
+          {collaborationMessage}
+        </div>
+      )}
+
       <input
         type="text"
-        className="form-control border-0 fw-bold fs-5 mb-2 shadow-none px-0"
+        className="form-control border-0 fw-bold fs-5 mb-2 shadow-none px-0 note-editor-title"
         placeholder="Note Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
 
       <textarea
-        className="form-control border-0 shadow-none px-0"
+        className="form-control border-0 shadow-none px-0 note-editor-textarea"
         placeholder="Type your note content here..."
         rows="4"
-        style={{ resize: 'none' }}
+        style={{ resize: "none" }}
         value={content}
         onChange={(e) => setContent(e.target.value)}
       />
@@ -148,7 +266,9 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
                 className="btn btn-sm btn-danger position-absolute top-0 end-0 p-0"
                 style={{ width: "20px", height: "20px", borderRadius: "50%" }}
                 onClick={() => removeImage(i)}
-              >&times;</button>
+              >
+                &times;
+              </button>
             </div>
           ))}
         </div>
@@ -156,35 +276,34 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
 
       {availableLabels.length > 0 && (
         <div className="mb-3 d-flex flex-wrap gap-2">
-          {availableLabels.map(lbl => (
+          {availableLabels.map((label) => (
             <span
-              key={lbl.id}
-              className={`badge rounded-pill cursor-pointer ${labelIds.includes(lbl.id) ? "bg-primary" : "bg-light text-dark border"}`}
-              onClick={() => toggleLabel(lbl.id)}
+              key={label.id}
+              className={`badge rounded-pill cursor-pointer ${labelIds.includes(label.id) ? "bg-primary" : "bg-light text-dark border"}`}
+              onClick={() => toggleLabel(label.id)}
             >
-              {lbl.name}
+              {label.name}
             </span>
           ))}
         </div>
       )}
 
-      <div className="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-        <div className="d-flex align-items-center gap-3">
+      <div className="note-editor-toolbar d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+        <div className="note-editor-actions d-flex align-items-center gap-3">
           <label className="btn btn-sm btn-outline-secondary mb-0">
-            🖼️ Images
+            Images
             <input type="file" multiple accept="image/*" className="d-none" onChange={handleImageUpload} />
           </label>
 
           {note && (
-            <button className={`btn btn-sm ${showSettings ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setShowSettings(!showSettings)}>
-              ⚙️ Security & Share
+            <button className={`btn btn-sm ${showSettings ? "btn-secondary" : "btn-outline-secondary"}`} onClick={() => setShowSettings(!showSettings)}>
+              Security and Share
             </button>
           )}
         </div>
-        <div className="d-flex align-items-center gap-3">
-          <span className="text-muted small">
-            {isSaving ? "Saving..." : "Saved."}
-          </span>
+
+        <div className="note-editor-status d-flex align-items-center gap-3">
+          <span className="text-muted small">{isSaving ? "Saving..." : (saveMessage || "Saved.")}</span>
           <button className="btn btn-sm btn-dark" onClick={onClose}>
             Close
           </button>
@@ -192,8 +311,14 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
       </div>
 
       {showSettings && note && (
-        <div className="mt-3 p-3 bg-light border rounded">
+        <div className="note-settings-panel mt-3 p-3 bg-light border rounded">
           <h6 className="fw-bold mb-3">Security Settings</h6>
+
+          {settingsMessage.text && (
+            <div className={`alert alert-${settingsMessage.type} py-2 px-3 small`}>
+              {settingsMessage.text}
+            </div>
+          )}
 
           {note.isLocked && (
             <div className="mb-3">
@@ -201,32 +326,32 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
               <input
                 type="password"
                 className="form-control form-control-sm mb-2"
-                placeholder="Required for verification..."
+                placeholder="Required for verification"
                 value={currentPassword}
-                onChange={e => setCurrentPassword(e.target.value)}
+                onChange={(e) => setCurrentPassword(e.target.value)}
               />
             </div>
           )}
 
           <div className="row g-2 mb-3">
-            <div className="col">
+            <div className="col-md-6">
               <label className="small text-muted mb-1">{note.isLocked ? "New Password" : "Set Password"}</label>
               <input
                 type="password"
                 className="form-control form-control-sm"
-                placeholder="Empty to disable"
+                placeholder="Leave empty to disable"
                 value={passwordInput}
-                onChange={e => setPasswordInput(e.target.value)}
+                onChange={(e) => setPasswordInput(e.target.value)}
               />
             </div>
-            <div className="col">
-              <label className="small text-muted mb-1">Confirm {note.isLocked ? "New " : ""}Password</label>
+            <div className="col-md-6">
+              <label className="small text-muted mb-1">Confirm Password</label>
               <input
                 type="password"
                 className="form-control form-control-sm"
-                placeholder="Match password above"
+                placeholder="Repeat the password"
                 value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
+                onChange={(e) => setConfirmPassword(e.target.value)}
               />
             </div>
           </div>
@@ -236,24 +361,37 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
           </button>
 
           <h6 className="fw-bold mb-3">Share Note</h6>
-          <div className="d-flex gap-2 align-items-center mb-3">
-            <input type="email" className="form-control form-control-sm w-auto" placeholder="Target email..." value={shareEmail} onChange={e => setShareEmail(e.target.value)} />
-            <select className="form-select form-select-sm w-auto" value={shareRole} onChange={e => setShareRole(e.target.value)}>
+          <div className="note-editor-share-row d-flex gap-2 align-items-center mb-3">
+            <input
+              type="email"
+              className="form-control form-control-sm"
+              placeholder="Target email"
+              value={shareEmail}
+              onChange={(e) => setShareEmail(e.target.value)}
+            />
+            <select className="form-select form-select-sm note-editor-role-select" value={shareRole} onChange={(e) => setShareRole(e.target.value)}>
               <option value="read">Read Only</option>
               <option value="edit">Editor</option>
             </select>
-            <button className="btn btn-sm btn-success" onClick={handleShare}>Share</button>
+            <button className="btn btn-sm btn-success" onClick={handleShare}>
+              Share
+            </button>
           </div>
 
           {note.sharedWith && note.sharedWith.length > 0 && (
             <ul className="list-group list-group-flush border">
-              {note.sharedWith.map((sw, i) => (
-                <li key={i} className="list-group-item bg-transparent d-flex justify-content-between align-items-center p-2">
-                  <span>
-                    <small className="fw-semibold me-2">{sw.email}</small>
-                    <span className="badge bg-secondary">{sw.role === 'edit' ? 'Editor' : 'Read Only'}</span>
-                  </span>
-                  <button className="btn btn-sm btn-link text-danger py-0" onClick={() => handleRevokeShare(sw.email)}>Revoke</button>
+              {note.sharedWith.map((share, index) => (
+                <li key={index} className="list-group-item bg-transparent d-flex justify-content-between align-items-center p-2">
+                  <div className="d-flex flex-column">
+                    <span>
+                      <small className="fw-semibold me-2">{share.email}</small>
+                      <span className="badge bg-secondary">{share.role === "edit" ? "Editor" : "Read Only"}</span>
+                    </span>
+                    {share.sharedAt && <small className="text-muted" style={{ fontSize: "0.7rem" }}>Shared on {new Date(share.sharedAt).toLocaleDateString()}</small>}
+                  </div>
+                  <button className="btn btn-sm btn-link text-danger py-0" onClick={() => handleRevokeShare(share.email)}>
+                    Revoke
+                  </button>
                 </li>
               ))}
             </ul>

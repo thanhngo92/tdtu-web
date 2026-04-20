@@ -28,15 +28,12 @@ export default function ForgotPassword() {
       const response = await authService.forgotPassword({ email });
 
       setSuccessMessage(
-        response?.message || "Request submitted. If the email exists, reset instructions will be sent."
+        response?.data?.message || "Request submitted. If the email exists, reset instructions will be sent."
       );
-      
-      // Auto redirect to reset password page for testing purposes (since we don't have real emails send out)
-      if(response?.resetToken || response?.resetOtp) {
-         setTimeout(() => {
-             navigate("/reset-password", { state: { email } });
-         }, 3000);
-      }
+
+      setTimeout(() => {
+        navigate("/reset-password", { state: { email } });
+      }, 1200);
     } catch (error) {
       setErrorMessage(
         error?.data?.message || error.message || "Failed to submit forgot password request"

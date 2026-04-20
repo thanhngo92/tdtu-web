@@ -28,8 +28,8 @@ export default function useNotes() {
     }
   }, []);
 
-  const deleteNote = async (id) => {
-    await noteService.deleteNote(id);
+  const deleteNote = async (id, password = null) => {
+    await noteService.deleteNote(id, password);
     await fetchNotes();
   };
 

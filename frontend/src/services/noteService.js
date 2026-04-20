@@ -14,6 +14,12 @@ const noteService = {
     });
   },
 
+  getNote(id) {
+    return request(`/notes/${id}`, {
+      method: "GET",
+    });
+  },
+
   updateNote(id, payload) {
     return request(`/notes/${id}`, {
       method: "PUT",
@@ -21,9 +27,10 @@ const noteService = {
     });
   },
 
-  deleteNote(id) {
+  deleteNote(id, password = null) {
     return request(`/notes/${id}`, {
       method: "DELETE",
+      body: JSON.stringify({ password }),
     });
   },
 

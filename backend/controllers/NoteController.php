@@ -75,9 +75,11 @@ class NoteController extends Controller
         AuthMiddleware::auth($response);
         $userId = $_SESSION['user_id'];
         $id = $request->getParam('id');
+        $body = $request->getBody();
+        $password = $body['password'] ?? null;
 
         try {
-            $this->noteService->deleteNote($id, $userId);
+            $this->noteService->deleteNote($id, $userId, $password);
             return $this->success($response, ['message' => 'Note deleted']);
         } catch (Exception $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);

@@ -14,7 +14,7 @@ export default function NoteCard({ note, onClick, onPin, onDelete, availableLabe
 
   const confirmDelete = (e) => {
     e.stopPropagation();
-    onDelete(note.id);
+    onDelete(note);
   };
 
   const cancelDelete = (e) => {
@@ -26,6 +26,8 @@ export default function NoteCard({ note, onClick, onPin, onDelete, availableLabe
     e.stopPropagation();
     onPin(note.id);
   };
+
+  const isShared = (note.sharedWith && note.sharedWith.length > 0) || note.permission !== "owner";
 
   return (
     <div
@@ -41,21 +43,21 @@ export default function NoteCard({ note, onClick, onPin, onDelete, availableLabe
         </h5>
 
         <div className="position-absolute top-0 end-0 p-2 d-flex gap-1 align-items-center" style={{ zIndex: 10 }}>
-          {note.isLocked && <span title="Locked">🔒</span>}
-          {note.sharedWith && note.sharedWith.length > 0 && <span title="Shared">👥</span>}
+          {note.isLocked && <span title="Locked">{"\uD83D\uDD12"}</span>}
+          {isShared && <span title="Shared">{"\uD83D\uDC65"}</span>}
           <button
             className="btn btn-sm p-0 text-muted border-0 bg-transparent"
             onClick={handlePin}
             title={note.isPinned ? "Unpin" : "Pin"}
           >
-            {note.isPinned ? "📌" : "📍"}
+            {note.isPinned ? "\uD83D\uDCCC" : "\uD83D\uDCCD"}
           </button>
         </div>
       </div>
 
       {note.isLocked ? (
         <div className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-muted">
-          <span className="fs-1 mb-2">🔒</span>
+          <span className="fs-1 mb-2">{"\uD83D\uDD12"}</span>
           <p className="mb-0 fw-semibold">Locked Content</p>
         </div>
       ) : (
@@ -74,9 +76,9 @@ export default function NoteCard({ note, onClick, onPin, onDelete, availableLabe
 
           {note.labelIds && note.labelIds.length > 0 && (
             <div className="mb-2 d-flex flex-wrap gap-1">
-              {note.labelIds.map(lid => {
-                const l = availableLabels.find(x => x.id === lid);
-                return l ? <span key={lid} className="badge bg-secondary rounded-pill fw-light" style={{ fontSize: "0.65rem" }}>{l.name}</span> : null;
+              {note.labelIds.map((labelId) => {
+                const label = availableLabels.find((item) => item.id === labelId);
+                return label ? <span key={labelId} className="badge bg-secondary rounded-pill fw-light" style={{ fontSize: "0.65rem" }}>{label.name}</span> : null;
               })}
             </div>
           )}
@@ -95,7 +97,7 @@ export default function NoteCard({ note, onClick, onPin, onDelete, availableLabe
           </div>
         ) : (
           <button className="btn btn-sm btn-link text-danger p-0" onClick={handleDelete} title="Delete">
-            🗑️
+            {"\uD83D\uDDD1\uFE0F"}
           </button>
         )}
       </div>

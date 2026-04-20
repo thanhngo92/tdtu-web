@@ -89,8 +89,19 @@ class NoteService
         return $this->getNote($id, $userId);
     }
 
-    public function deleteNote($id, $userId)
+    public function deleteNote($id, $userId, $password = null)
     {
+        $note = $this->noteModel->getById($id, $userId);
+        if (!$note) {
+            throw new Exception('Note not found', 404);
+        }
+
+        if (!empty($note['is_locked'])) {
+            if (empty($password) || !$this->noteModel->verifyNotePassword($id, $password)) {
+                throw new Exception('Password is required to delete this locked note', 401);
+            }
+        }
+
         if (!$this->noteModel->delete($id, $userId)) {
             throw new Exception('Failed to delete note', 500);
         }
@@ -142,6 +153,10 @@ class NoteService
             
             $labels = $this->noteLabelModel->getLabelsByNoteId($noteId);
             $note['labelIds'] = array_map(fn($l) => (int)$l['id'], $labels);
+            $note['ownerEmail'] = $note['owner_email'] ?? '';
+            $note['ownerDisplayName'] = $note['owner_name'] ?? '';
+            $note['sharedAt'] = $note['shared_at'] ?? null;
+            $note = $this->formatNote($note);
         }
 
         return $sharedNotes;
@@ -196,13 +211,24 @@ class NoteService
         $labels = $this->noteLabelModel->getLabelsByNoteId($noteId);
         $note['labelIds'] = array_map(fn($l) => (int)$l['id'], $labels);
         
-        // Sharing Info
-        $shares = $this->noteShareModel->getByOwner($userId);
-        $noteShared = array_filter($shares, fn($s) => $s['note_id'] == $noteId);
-        $note['sharedWith'] = array_values(array_map(fn($s) => [
-            'email' => $s['recipient_email'], 
-            'role' => $s['permission']
-        ], $noteShared));
+        // Sharing Info for Owner
+        $isOwner = (int)$note['user_id'] === (int)$userId;
+        if ($isOwner) {
+            $shares = $this->noteShareModel->getByOwner($userId);
+            $noteShared = array_filter($shares, fn($s) => $s['note_id'] == $noteId);
+            $note['sharedWith'] = array_values(array_map(fn($s) => [
+                'email' => $s['recipient_email'], 
+                'role' => $s['permission'],
+                'sharedAt' => $s['shared_at'] ?? null
+            ], $noteShared));
+        }
+
+        // Owner info for Recipients
+        if (!$isOwner) {
+            $owner = $this->userModel->getById($note['user_id']);
+            $note['ownerEmail'] = $owner['email'] ?? '';
+            $note['ownerDisplayName'] = $owner['display_name'] ?? '';
+        }
 
         // Redaction for Locked Notes
         if ($isLocked && !$bypassLock) {
@@ -210,7 +236,30 @@ class NoteService
             $note['images'] = [];
         }
 
-        return $note;
+        return $this->formatNote($note);
+    }
+
+    private function formatNote($note)
+    {
+        return [
+            'id' => (int)$note['id'],
+            'userId' => (int)($note['user_id'] ?? 0),
+            'title' => $note['title'] ?? '',
+            'content' => $note['content'] ?? '',
+            'noteColor' => $note['note_color'] ?? 'default',
+            'isPinned' => (bool)($note['is_pinned'] ?? false),
+            'pinnedAt' => $note['pinned_at'] ?? null,
+            'isLocked' => (bool)($note['is_locked'] ?? false),
+            'images' => $note['images'] ?? [],
+            'labelIds' => $note['labelIds'] ?? [],
+            'sharedWith' => $note['sharedWith'] ?? [],
+            'ownerEmail' => $note['ownerEmail'] ?? null,
+            'ownerDisplayName' => $note['ownerDisplayName'] ?? null,
+            'sharedAt' => $note['sharedAt'] ?? ($note['shared_at'] ?? null),
+            'permission' => $note['permission'] ?? 'owner',
+            'createdAt' => $note['created_at'] ?? null,
+            'updatedAt' => $note['updated_at'] ?? null,
+        ];
     }
 
     private function syncLabels($noteId, $labelIds)

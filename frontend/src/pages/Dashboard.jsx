@@ -81,9 +81,9 @@ export default function Dashboard() {
     return filtered.sort((a, b) => {
       if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
       if (a.isPinned && b.isPinned) {
-        return new Date(b.pinned_at).getTime() - new Date(a.pinned_at).getTime();
+        return new Date(b.pinnedAt).getTime() - new Date(a.pinnedAt).getTime();
       }
-      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
   }, [notes, sharedNotes, debouncedSearch, selectedLabelFilter, activeTab]);
 
@@ -120,10 +120,17 @@ export default function Dashboard() {
     }
   };
 
-  const handleDeleteNote = async (id) => {
+  const handleDeleteNote = async (note) => {
     try {
-      await deleteNote(id);
-      if (selectedNote && selectedNote.id === id) {
+      let password = null;
+
+      if (note.isLocked) {
+        password = window.prompt("This note is locked. Please enter the password before deleting:");
+        if (password === null) return;
+      }
+
+      await deleteNote(note.id, password);
+      if (selectedNote && selectedNote.id === note.id) {
         closeEditor();
       }
     } catch (err) {
@@ -255,8 +262,11 @@ export default function Dashboard() {
                   availableLabels={labels}
                 />
                 {activeTab === 'shared-with-me' && (
-                  <div className="mt-2 px-2 d-flex justify-content-between align-items-center">
-                    <small className="text-muted">Shared by: <span className="fw-semibold">{note.owner_name}</span></small>
+                  <div className="shared-note-meta mt-2 px-2 d-flex justify-content-between align-items-center">
+                    <div className="d-flex flex-column">
+                      <small className="text-muted">Shared by: <span className="fw-semibold">{note.ownerDisplayName || note.ownerEmail}</span></small>
+                      {note.sharedAt && <small className="text-muted x-small" style={{ fontSize: '0.7rem' }}>on {new Date(note.sharedAt).toLocaleDateString()}</small>}
+                    </div>
                     <span className="badge rounded-pill bg-light text-dark border px-3">{note.permission === 'edit' ? 'Editor' : 'Read Only'}</span>
                   </div>
                 )}

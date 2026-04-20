@@ -151,6 +151,52 @@ body.dark-theme ::-webkit-scrollbar-thumb {
   border: 2px solid var(--primary-color) !important;
 }
 
+.note-editor {
+  background: var(--card-bg) !important;
+  border-color: var(--border-color) !important;
+}
+
+.note-editor-title,
+.note-editor-textarea {
+  background: transparent !important;
+  color: var(--text-main) !important;
+}
+
+.note-editor-textarea {
+  min-height: 180px;
+}
+
+.note-editor-toolbar,
+.shared-note-meta {
+  gap: 1rem;
+}
+
+.note-editor-actions,
+.note-editor-status {
+  flex-wrap: wrap;
+}
+
+.note-settings-panel {
+  background: rgba(248, 249, 250, 0.95) !important;
+}
+
+.note-editor-share-row {
+  flex-wrap: wrap;
+}
+
+.note-editor-share-row .form-control,
+.note-editor-share-row .note-editor-role-select {
+  min-width: 0;
+}
+
+.note-editor-share-row .form-control {
+  flex: 1 1 240px;
+}
+
+.note-editor-role-select {
+  flex: 0 0 140px;
+}
+
 /* ============================================================ 
    MODALS & OVERLAYS
    ============================================================ */
@@ -252,7 +298,7 @@ body.dark-theme ::-webkit-scrollbar-thumb {
 
 @media (max-width: 768px) {
   .app-main {
-    padding: 1.5rem;
+    padding: 1rem;
   }
 
   .note-grid-layout {
@@ -264,6 +310,48 @@ body.dark-theme ::-webkit-scrollbar-thumb {
     height: 50px;
     bottom: 2rem;
     right: 2rem;
+  }
+
+  .note-editor {
+    padding: 1rem !important;
+  }
+
+  .note-editor-toolbar,
+  .shared-note-meta {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .note-editor-actions,
+  .note-editor-status {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .note-editor-share-row {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .note-editor-role-select,
+  .note-editor-share-row .btn {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 576px) {
+  .search-container-ui {
+    padding: 0.55rem 0.9rem;
+  }
+
+  .note-card-ui {
+    padding: 1rem;
+  }
+
+  .fab-btn-ui {
+    bottom: 1.25rem;
+    right: 1.25rem;
   }
 }
 
