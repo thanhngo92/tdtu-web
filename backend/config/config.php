@@ -44,4 +44,16 @@ return [
         'from' => getenv('MAIL_FROM') ?: 'noreply@notemate.local',
         'log_file' => getenv('MAIL_LOG_FILE') ?: 'emails.log',
     ],
+    'session' => [
+        'name' => getenv('SESSION_NAME') ?: 'notemate_session',
+        'secure' => filter_var(getenv('SESSION_SECURE') ?: 'false', FILTER_VALIDATE_BOOLEAN),
+        'httponly' => true,
+        'samesite' => getenv('SESSION_SAMESITE') ?: 'Lax',
+        'path' => '/',
+        'domain' => getenv('SESSION_DOMAIN') ?: '',
+    ],
+    'cors' => [
+        'allowed_origin' => getenv('CORS_ALLOWED_ORIGIN') ?: 'http://localhost:5173',
+        'allow_credentials' => true,
+    ],
 ];
