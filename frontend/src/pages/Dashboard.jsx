@@ -13,11 +13,11 @@ import LabelManager from "../components/LabelManager";
  * Manages notes display, filtering, searching and global UI states for the editor and label manager.
  */
 export default function Dashboard() {
-  const { user, logout, isAuthLoading } = useAuth();
+  const { user, logout, isAuthLoading, refreshAuth } = useAuth();
 
   const {
     notes, sharedNotes, labels, fetchNotes, fetchLabels, togglePin, deleteNote
-  } = useNotes();
+  } = useNotes(refreshAuth);
 
   const [activeTab, setActiveTab] = useState("my-notes");
   const [viewMode, setViewMode] = useState("grid");
@@ -47,10 +47,12 @@ export default function Dashboard() {
 
   // Initial data fetch and real-time synchronization
   useEffect(() => {
-    if (user) {
-      fetchNotes();
-      fetchLabels();
+    if (!user) {
+      return;
     }
+
+    fetchNotes();
+    fetchLabels();
 
     // Collaborative sync (Real-time simulation per Rubrik Requirement 24)
     const syncInterval = setInterval(() => {
@@ -59,7 +61,7 @@ export default function Dashboard() {
     }, 5000); // 5s interval for a balance of real-time feel and performance
 
     return () => clearInterval(syncInterval);
-  }, [user]);
+  }, [user, fetchNotes, fetchLabels]);
 
   // Derived notes filtering + sorting
   const displayedNotes = useMemo(() => {
