@@ -1,6 +1,37 @@
 import { useEffect, useRef, useState } from "react";
 import noteService from "../services/noteService";
 
+const MAX_IMAGE_DIMENSION = 1200;
+const IMAGE_QUALITY = 0.82;
+
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onerror = () => reject(new Error("Unable to read image file."));
+    reader.onload = () => {
+      const img = new Image();
+
+      img.onerror = () => reject(new Error("Unable to load image file."));
+      img.onload = () => {
+        const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        resolve(canvas.toDataURL("image/jpeg", IMAGE_QUALITY));
+      };
+
+      img.src = reader.result;
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function NoteEditor({ note, onClose, onSaveComplete, availableLabels = [] }) {
   const [title, setTitle] = useState(note ? note.title : "");
   const [content, setContent] = useState(note ? note.content : "");
@@ -154,17 +185,21 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
     };
   }, [note, isSaving, onSaveComplete, title, content, images, labelIds]);
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    files.forEach((file) => {
-      if (!file.type.startsWith("image/")) return;
+    const imageFiles = files.filter((file) => file.type.startsWith("image/"));
 
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setImages((prev) => [...prev, ev.target.result]);
-      };
-      reader.readAsDataURL(file);
-    });
+    if (imageFiles.length === 0) return;
+
+    try {
+      const compressedImages = await Promise.all(imageFiles.map(compressImage));
+      setImages((prev) => [...prev, ...compressedImages]);
+    } catch (err) {
+      console.error("Image upload failed", err);
+      setSaveMessage("Image upload failed. Please try a different image.");
+    } finally {
+      e.target.value = "";
+    }
   };
 
   const removeImage = (index) => {

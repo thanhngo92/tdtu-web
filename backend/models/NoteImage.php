@@ -23,13 +23,16 @@ class NoteImage
         $sql = "CREATE TABLE IF NOT EXISTS {$this->table} (
             id INT AUTO_INCREMENT PRIMARY KEY,
             note_id INT NOT NULL,
-            image_url VARCHAR(500) NOT NULL,
+            image_url LONGTEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
         )";
 
-        return $this->conn->exec($sql);
+        $result = $this->conn->exec($sql);
+        $this->ensureLongTextColumn();
+
+        return $result;
     }
 
     public function create($noteId, $imageUrl)
@@ -39,10 +42,24 @@ class NoteImage
 
         $stmt = $this->conn->prepare($sql);
 
-        return $stmt->execute([
-            ':note_id' => $noteId,
-            ':image_url' => $imageUrl
-        ]);
+        try {
+            return $stmt->execute([
+                ':note_id' => $noteId,
+                ':image_url' => $imageUrl
+            ]);
+        } catch (PDOException $e) {
+            if ($e->getCode() !== '22001') {
+                throw $e;
+            }
+
+            $this->ensureLongTextColumn();
+            $stmt = $this->conn->prepare($sql);
+
+            return $stmt->execute([
+                ':note_id' => $noteId,
+                ':image_url' => $imageUrl
+            ]);
+        }
     }
 
     public function getByNoteId($noteId)
@@ -71,5 +88,10 @@ class NoteImage
             ':id' => $id,
             ':note_id' => $noteId
         ]);
+    }
+
+    private function ensureLongTextColumn(): void
+    {
+        $this->conn->exec("ALTER TABLE {$this->table} MODIFY image_url LONGTEXT NOT NULL");
     }
 }
