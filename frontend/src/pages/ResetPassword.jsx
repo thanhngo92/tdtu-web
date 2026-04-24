@@ -88,7 +88,7 @@ export default function ResetPassword() {
             <form onSubmit={handleSubmitEmail}>
               <div className="mb-4">
                 <label className="form-label small">Email Address</label>
-                <input type="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" />
+                <input type="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email address" />
               </div>
               <button type="submit" className="btn btn-primary w-100">Continue</button>
             </form>
@@ -96,22 +96,22 @@ export default function ResetPassword() {
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
                 <label className="form-label small">Token / OTP</label>
-                <input name="tokenOrOtp" type="text" className="form-control" value={formData.tokenOrOtp} onChange={handleChange} placeholder="6-digit OTP or long token" />
+                <input name="tokenOrOtp" type="text" className="form-control" value={formData.tokenOrOtp} onChange={handleChange} placeholder="Verification code" />
                 <div className="form-text x-small text-muted">Check your email {email} for the code.</div>
               </div>
 
               <div className="mb-3">
                 <label className="form-label small">New Password</label>
-                <input name="password" type="password" className="form-control" value={formData.password} onChange={handleChange} placeholder="Min 6 characters" />
+                <input name="password" type="password" className="form-control" value={formData.password} onChange={handleChange} placeholder="New password" />
               </div>
 
               <div className="mb-4">
                 <label className="form-label small">Confirm Password</label>
-                <input name="confirmPassword" type="password" className="form-control" value={formData.confirmPassword} onChange={handleChange} placeholder="Repeat password" />
+                <input name="confirmPassword" type="password" className="form-control" value={formData.confirmPassword} onChange={handleChange} placeholder="Confirm password" />
               </div>
 
               <button type="submit" className="btn btn-primary w-100" disabled={isSubmitting}>
-                {isSubmitting ? "Processing..." : "Reset Password"}
+                {isSubmitting ? "Updating..." : "Update Password"}
               </button>
               
               <button type="button" className="btn btn-link w-100 btn-sm mt-2 text-muted" onClick={() => setStep(1)}>

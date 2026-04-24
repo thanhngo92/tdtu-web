@@ -81,7 +81,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
     setShareRole("read");
 
     if (note?.permission === "edit") {
-      setCollaborationMessage("Shared note with edit permission. Changes refresh automatically every 3 seconds.");
+      setCollaborationMessage("Collaborative editing active.");
     } else {
       setCollaborationMessage("");
     }
@@ -145,10 +145,10 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
           }
         }
 
-        setSaveMessage(res?.offline ? "Saved offline. Sync will run when you reconnect." : "All changes saved.");
+        setSaveMessage(res?.offline ? "Saved to local cache." : "All changes synced.");
       } catch (err) {
         console.error("Auto-save failed", err);
-        setSaveMessage("Auto-save failed. Please keep this editor open and try again.");
+        setSaveMessage("Sync failed. Keep editor open.");
       } finally {
         setIsSaving(false);
       }
@@ -160,7 +160,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
   useEffect(() => {
     if (!note || note.permission !== "edit" || note.isLocked) {
       if (note?.permission === "edit" && note?.isLocked) {
-        setCollaborationMessage("Locked shared notes refresh when they are reopened with the password.");
+        setCollaborationMessage("Reopen note to refresh locked shared content.");
       }
       return;
     }
@@ -184,12 +184,12 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
           setLabelIds(remoteNote.labelIds);
           lastSavedNoteRef.current = remoteNote;
           onSaveComplete?.(remoteNote);
-          setCollaborationMessage("This shared note was refreshed from another editor.");
+          setCollaborationMessage("Note content refreshed.");
         } else {
-          setCollaborationMessage("Another editor has newer changes. Save your work first, then reopen the note to refresh.");
+          setCollaborationMessage("Newer changes available. Reopen to sync.");
         }
       } catch {
-        setCollaborationMessage("Unable to refresh shared changes right now.");
+        setCollaborationMessage("Connection lost. Unable to sync.");
       } finally {
         if (!isCancelled) {
           syncTimeoutRef.current = setTimeout(pollLatest, 3000);
@@ -216,7 +216,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
       setImages((prev) => [...prev, ...compressedImages]);
     } catch (err) {
       console.error("Image upload failed", err);
-      setSaveMessage("Image upload failed. Please try a different image.");
+      setSaveMessage("Image upload failed.");
     } finally {
       e.target.value = "";
     }
@@ -240,11 +240,11 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
 
     if (!note.isLocked) {
       if (!passwordInput || !confirmPassword) {
-        setSettingsMessage({ type: "danger", text: "Please enter the new password twice." });
+        setSettingsMessage({ type: "danger", text: "Enter the new password twice." });
         return;
       }
     } else if (!currentPassword) {
-      setSettingsMessage({ type: "danger", text: "Please enter the current password before changing note security." });
+      setSettingsMessage({ type: "danger", text: "Verify current password first." });
       return;
     }
 
@@ -315,14 +315,14 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
       <input
         type="text"
         className="form-control border-0 fw-bold fs-5 mb-2 shadow-none px-0 note-editor-title"
-        placeholder="Note Title"
+        placeholder="Untitled Note"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
 
       <textarea
         className="form-control border-0 shadow-none px-0 note-editor-textarea"
-        placeholder="Type your note content here..."
+        placeholder="Take a note..."
         rows="4"
         style={{ resize: "none" }}
         value={content}
@@ -390,7 +390,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
             </div>
           )}
 
-          <h6 className="fw-bold mb-3">Security Settings</h6>
+          <h5 className="fw-bold mb-3">Security Settings</h5>
 
           {settingsMessage.text && (
             <div className={`alert alert-${settingsMessage.type} py-2 px-3 small`}>
@@ -438,24 +438,25 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
             </div>
           </div>
 
-          <button className="btn btn-sm btn-primary w-100 mb-4" onClick={handleUpdatePassword} disabled={!isOnline}>
+          <button className="btn btn-sm btn-primary w-100 mb-4 py-2 fw-semibold" onClick={handleUpdatePassword} disabled={!isOnline}>
             {note.isLocked ? (passwordInput ? "Update Password" : "Disable Password Lock") : "Enable Password Lock"}
           </button>
 
-          <h6 className="fw-bold mb-3">Share Note</h6>
+          <h5 className="fw-bold mb-3">Share Note</h5>
+
           <div className="note-editor-share-row d-flex gap-2 align-items-center mb-3">
             <input
               type="email"
               className="form-control form-control-sm"
-              placeholder="Target email"
+              placeholder="Recipient Email"
               value={shareEmail}
               onChange={(e) => setShareEmail(e.target.value)}
             />
-            <select className="form-select form-select-sm note-editor-role-select" value={shareRole} onChange={(e) => setShareRole(e.target.value)}>
+            <select className="form-select form-select-sm note-editor-role-select" style={{ width: "auto" }} value={shareRole} onChange={(e) => setShareRole(e.target.value)}>
               <option value="read">Read Only</option>
               <option value="edit">Editor</option>
             </select>
-            <button className="btn btn-sm btn-success" onClick={handleShare} disabled={!isOnline}>
+            <button className="btn btn-sm btn-success px-3" onClick={handleShare} disabled={!isOnline}>
               Share
             </button>
           </div>

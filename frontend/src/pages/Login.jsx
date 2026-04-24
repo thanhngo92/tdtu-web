@@ -85,7 +85,7 @@ export default function Login() {
                 className="form-control"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="Enter your email"
+                placeholder="Email address"
                 autoComplete="email"
               />
             </div>
@@ -101,7 +101,7 @@ export default function Login() {
                 className="form-control"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Enter your password"
+                placeholder="Password"
                 autoComplete="current-password"
               />
             </div>
@@ -121,7 +121,7 @@ export default function Login() {
               className="btn btn-primary w-100"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Logging in..." : "Login"}
+              {isSubmitting ? "Signing In..." : "Sign In"}
             </button>
           </form>
 
@@ -132,7 +132,7 @@ export default function Login() {
               className="btn btn-link text-decoration-none auth-link-btn"
               onClick={() => navigate("/register")}
             >
-              Register
+              Sign Up
             </button>
           </div>
         </div>

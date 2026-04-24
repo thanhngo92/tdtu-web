@@ -333,17 +333,14 @@ export default function Dashboard() {
             <h5 className="mb-0 fw-bold">
               Label: <span className="text-primary">{labels.find((label) => label.id === selectedLabelFilter)?.name}</span>
             </h5>
-            <button className="btn btn-sm btn-link text-decoration-none text-muted" onClick={() => setSelectedLabelFilter(null)}>
-              Clear Filter
-            </button>
           </div>
         )}
 
         {displayedNotes.length === 0 ? (
           <div className="text-center text-muted py-5 mt-5">
-            <div className="display-1 opacity-25 mb-3">{"\uD83D\uDDED"}</div>
-            <h3 className="fw-normal">No notes found.</h3>
-            <p>Your workspace is clean. Create your first note!</p>
+            <div className="display-1 opacity-25 mb-3">{"\uD83D\uDCD4"}</div>
+            <h3 className="fw-normal">No notes here yet.</h3>
+            <p>Start your journey by creating your first note!</p>
           </div>
         ) : (
           <div className={viewMode === "grid" ? "note-grid-layout" : "d-flex flex-column gap-3 mb-5"}>
@@ -369,7 +366,7 @@ export default function Dashboard() {
                       )}
                     </div>
                     <span className="badge rounded-pill bg-light text-dark border px-3">
-                      {note.permission === "edit" ? "Editor" : "Read Only"}
+                      {note.permission === "edit" ? "Collaborator" : "Viewer"}
                     </span>
                   </div>
                 )}

@@ -105,7 +105,7 @@ export default function Register() {
                 className="form-control"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="Enter your email"
+                placeholder="Email address"
                 autoComplete="email"
               />
             </div>
@@ -121,7 +121,7 @@ export default function Register() {
                 className="form-control"
                 value={formData.displayName}
                 onChange={handleChange}
-                placeholder="Enter your display name"
+                placeholder="Full name"
                 autoComplete="nickname"
               />
             </div>
@@ -137,7 +137,7 @@ export default function Register() {
                 className="form-control"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Enter your password"
+                placeholder="Password"
                 autoComplete="new-password"
               />
             </div>
@@ -153,7 +153,7 @@ export default function Register() {
                 className="form-control"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                placeholder="Confirm your password"
+                placeholder="Confirm password"
                 autoComplete="new-password"
               />
             </div>
@@ -163,7 +163,7 @@ export default function Register() {
               className="btn btn-primary w-100"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Creating account..." : "Register"}
+              {isSubmitting ? "Signing Up..." : "Sign Up"}
             </button>
           </form>
 
@@ -174,7 +174,7 @@ export default function Register() {
               className="btn btn-link text-decoration-none auth-link-btn"
               onClick={() => navigate("/login")}
             >
-              Login
+              Sign In
             </button>
           </div>
         </div>
