@@ -114,9 +114,8 @@ class Note
 
     public function delete($id, $userId)
     {
-        $sql = "DELETE n FROM {$this->table} n
-                LEFT JOIN note_shares ns ON n.id = ns.note_id AND ns.shared_with_user_id = :user_id
-                WHERE n.id = :id AND (n.user_id = :user_id OR (ns.shared_with_user_id = :user_id AND ns.permission = 'edit'))";
+        $sql = "DELETE FROM {$this->table}
+                WHERE id = :id AND user_id = :user_id";
 
         $stmt = $this->conn->prepare($sql);
 

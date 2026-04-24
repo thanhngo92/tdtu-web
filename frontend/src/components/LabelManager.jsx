@@ -5,7 +5,7 @@ import noteService from "../services/noteService";
  * Label Manager Component
  * Handles CRUD operations for labels in a modal interface.
  */
-export default function LabelManager({ onClose, labels, fetchLabels }) {
+export default function LabelManager({ onClose, labels, onLabelsChanged }) {
   const [newLabelName, setNewLabelName] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState("");
@@ -16,7 +16,7 @@ export default function LabelManager({ onClose, labels, fetchLabels }) {
     try {
       await noteService.createLabel(newLabelName.trim());
       setNewLabelName("");
-      fetchLabels();
+      await onLabelsChanged?.();
     } catch (err) {
       console.error(err);
     }
@@ -28,7 +28,7 @@ export default function LabelManager({ onClose, labels, fetchLabels }) {
       await noteService.updateLabel(id, editingName.trim());
       setEditingId(null);
       setEditingName("");
-      fetchLabels();
+      await onLabelsChanged?.();
     } catch (err) {
       console.error(err);
     }
@@ -38,8 +38,7 @@ export default function LabelManager({ onClose, labels, fetchLabels }) {
     if (window.confirm("Delete this label? Notes with this label will not be deleted.")) {
       try {
         await noteService.deleteLabel(id);
-        fetchLabels();
-        // The notes will automatically have their reference cleaned up backend side
+        await onLabelsChanged?.();
       } catch (err) {
         console.error(err);
       }

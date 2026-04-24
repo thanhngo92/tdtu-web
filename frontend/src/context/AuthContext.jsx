@@ -1,7 +1,59 @@
-import { createContext, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import authService from "../services/authService";
+import AuthContext from "./authContext";
+import { isOfflineError } from "../services/offlineUtils";
 
-export const AuthContext = createContext(null);
+const AUTH_CACHE_KEY = "notemate-auth-user";
+
+function readCachedUser() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(AUTH_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedUser(user) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  if (!user) {
+    window.localStorage.removeItem(AUTH_CACHE_KEY);
+    return;
+  }
+
+  window.localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(user));
+}
+
+function applyUserPreferences(user) {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  if (user?.preferences?.theme === "dark") {
+    document.body.classList.add("dark-theme");
+  } else {
+    document.body.classList.remove("dark-theme");
+  }
+
+  if (user?.preferences?.fontSize) {
+    document.documentElement.style.setProperty("--global-font-size", `${user.preferences.fontSize}px`);
+  } else {
+    document.documentElement.style.removeProperty("--global-font-size");
+  }
+
+  if (user?.preferences?.noteColor) {
+    document.documentElement.setAttribute("data-note-color", user.preferences.noteColor);
+  } else {
+    document.documentElement.removeAttribute("data-note-color");
+  }
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -9,17 +61,31 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated = !!user;
 
+  const storeUser = useCallback((nextUser) => {
+    setUser(nextUser);
+    writeCachedUser(nextUser);
+  }, []);
+
   const fetchMe = useCallback(async () => {
     try {
       const response = await authService.getMe();
       const userData = response?.data ?? response ?? null;
-      setUser(userData);
+      storeUser(userData);
       return userData;
     } catch (error) {
-      setUser(null);
+      if (isOfflineError(error)) {
+        const cachedUser = readCachedUser();
+
+        if (cachedUser) {
+          setUser(cachedUser);
+          return cachedUser;
+        }
+      }
+
+      storeUser(null);
       throw error;
     }
-  }, []);
+  }, [storeUser]);
 
   const login = useCallback(
     async (payload) => {
@@ -33,61 +99,38 @@ export function AuthProvider({ children }) {
           response,
         };
       } catch (error) {
-        setUser(null);
+        storeUser(null);
         throw error;
       }
     },
-    [fetchMe]
+    [fetchMe, storeUser]
   );
 
   const logout = useCallback(async () => {
     try {
       await authService.logout();
     } finally {
-      setUser(null);
+      storeUser(null);
     }
-  }, []);
+  }, [storeUser]);
 
   const refreshAuth = useCallback(async () => {
     setIsAuthLoading(true);
     try {
       await fetchMe();
     } catch {
-      setUser(null);
+      storeUser(readCachedUser());
     } finally {
       setIsAuthLoading(false);
     }
-  }, [fetchMe]);
+  }, [fetchMe, storeUser]);
 
   useEffect(() => {
     refreshAuth();
   }, [refreshAuth]);
 
-  // Sync user preferences to the DOM globally
   useEffect(() => {
-    if (user && user.preferences) {
-      // Handle theme
-      if (user.preferences.theme === "dark") {
-        document.body.classList.add("dark-theme");
-      } else {
-        document.body.classList.remove("dark-theme");
-      }
-
-      // Handle font size
-      if (user.preferences.fontSize) {
-        document.documentElement.style.setProperty("--global-font-size", `${user.preferences.fontSize}px`);
-      }
-
-      // Handle global note coloring or accents
-      if (user.preferences.noteColor) {
-        document.documentElement.setAttribute("data-note-color", user.preferences.noteColor);
-      }
-    } else {
-      // Revert to defaults if unauthenticated
-      document.body.classList.remove("dark-theme");
-      document.documentElement.style.removeProperty("--global-font-size");
-      document.documentElement.removeAttribute("data-note-color");
-    }
+    applyUserPreferences(user);
   }, [user]);
 
   const value = useMemo(

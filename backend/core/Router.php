@@ -40,8 +40,8 @@ class Router
         $request = new Request();
         $response = new Response();
 
-        $method = $request->method;
-        $uri = $request->uri;
+        $method = $request->getMethod();
+        $uri = $request->getUri();
 
         $handler = $this->routes[$method][$uri] ?? null;
         $params = [];
@@ -73,8 +73,7 @@ class Router
             return $response->error('Not Found', 404);
         }
 
-        // Add params to request object if needed, or pass directly
-        $request->params = $params;
+        $request->setParams($params);
 
         if (is_array($handler)) {
             $controllerClass = $handler[0];

@@ -5,62 +5,55 @@ export default function useNotes(onUnauthorized) {
   const [notes, setNotes] = useState([]);
   const [sharedNotes, setSharedNotes] = useState([]);
   const [labels, setLabels] = useState([]);
-  // eslint-disable-next-line no-unused-vars
-  const [loading, setLoading] = useState(false);
+
+  const clearWorkspace = useCallback(() => {
+    setNotes([]);
+    setSharedNotes([]);
+    setLabels([]);
+  }, []);
 
   const handleError = useCallback((error) => {
     if (error?.status === 401) {
-      setNotes([]);
-      setSharedNotes([]);
-      setLabels([]);
+      clearWorkspace();
       onUnauthorized?.();
       return;
     }
 
     console.error(error);
-  }, [onUnauthorized]);
+  }, [clearWorkspace, onUnauthorized]);
 
-  const fetchNotes = useCallback(async () => {
+  const refreshWorkspace = useCallback(async () => {
     try {
-      const res = await noteService.getNotes();
-      setNotes(res.data || []);
-      
-      const resShared = await noteService.getSharedNotes();
-      setSharedNotes(resShared.data || []);
-    } catch (e) {
-      handleError(e);
+      const [ownNotesResponse, sharedNotesResponse, labelsResponse] = await Promise.all([
+        noteService.getNotes(),
+        noteService.getSharedNotes(),
+        noteService.getLabels(),
+      ]);
+
+      setNotes(ownNotesResponse.data || []);
+      setSharedNotes(sharedNotesResponse.data || []);
+      setLabels(labelsResponse.data || []);
+    } catch (error) {
+      handleError(error);
     }
   }, [handleError]);
 
-  const fetchLabels = useCallback(async () => {
-    try {
-      const res = await noteService.getLabels();
-      setLabels(res.data || []);
-    } catch (e) {
-      handleError(e);
-    }
-  }, [handleError]);
-
-  const deleteNote = async (id, password = null) => {
+  const deleteNote = useCallback(async (id, password = null) => {
     await noteService.deleteNote(id, password);
-    await fetchNotes();
-  };
+    await refreshWorkspace();
+  }, [refreshWorkspace]);
 
-  const togglePin = async (id) => {
+  const togglePin = useCallback(async (id) => {
     await noteService.togglePin(id);
-    await fetchNotes();
-  };
+    await refreshWorkspace();
+  }, [refreshWorkspace]);
 
   return {
     notes,
     sharedNotes,
     labels,
-    loading,
-    fetchNotes,
-    fetchLabels,
+    refreshWorkspace,
     deleteNote,
     togglePin,
-    setNotes,
-    setSharedNotes
   };
 }

@@ -106,11 +106,10 @@ class NoteController extends Controller
         $userId = $_SESSION['user_id'];
         $id = $request->getParam('id');
         $body = $request->getBody();
-        $password = $body['password'] ?? null;
 
         try {
-            $this->noteService->setLock($id, $userId, $password);
-            return $this->success($response, ['message' => !empty($password) ? 'Note locked' : 'Note unlocked']);
+            $result = $this->noteService->setLock($id, $userId, $body);
+            return $this->success($response, $result);
         } catch (Exception $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }

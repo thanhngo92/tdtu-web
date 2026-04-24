@@ -4,7 +4,7 @@ import useAuth from "../hooks/useAuth";
 
 export default function Profile() {
   const { user, fetchMe } = useAuth();
-  
+
   const [profileData, setProfileData] = useState({
     displayName: user?.displayName || "",
     avatarUrl: user?.avatarUrl || "",
@@ -42,16 +42,16 @@ export default function Profile() {
     }
   }, [user]);
 
-  const handleProfileChange = (e) => {
-    setProfileData({ ...profileData, [e.target.name]: e.target.value });
+  const handleProfileChange = (event) => {
+    setProfileData({ ...profileData, [event.target.name]: event.target.value });
   };
 
-  const handlePasswordChange = (e) => {
-    setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+  const handlePasswordChange = (event) => {
+    setPasswordData({ ...passwordData, [event.target.name]: event.target.value });
   };
 
-  const handlePreferencesChange = (e) => {
-    setPreferencesData({ ...preferencesData, [e.target.name]: e.target.value });
+  const handlePreferencesChange = (event) => {
+    setPreferencesData({ ...preferencesData, [event.target.name]: event.target.value });
   };
 
   const clearMessages = (section) => {
@@ -61,20 +61,21 @@ export default function Profile() {
     }));
   };
 
-  const handleAvatarUpload = (e) => {
-    const file = e.target.files[0];
+  const handleAvatarUpload = (event) => {
+    const file = event.target.files[0];
     if (file && file.type.startsWith("image/")) {
       const reader = new FileReader();
-      reader.onload = (ev) => {
-        setProfileData({ ...profileData, avatarUrl: ev.target.result });
+      reader.onload = (loadEvent) => {
+        setProfileData({ ...profileData, avatarUrl: loadEvent.target.result });
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleUpdateProfile = async (e) => {
-    e.preventDefault();
+  const handleUpdateProfile = async (event) => {
+    event.preventDefault();
     clearMessages("profile");
+
     try {
       await authService.updateProfile(profileData);
       await fetchMe();
@@ -90,9 +91,10 @@ export default function Profile() {
     }
   };
 
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
+  const handleChangePassword = async (event) => {
+    event.preventDefault();
     clearMessages("password");
+
     try {
       await authService.updatePassword(passwordData);
       setMessages((prev) => ({
@@ -108,9 +110,10 @@ export default function Profile() {
     }
   };
 
-  const handleUpdatePreferences = async (e) => {
-    e.preventDefault();
+  const handleUpdatePreferences = async (event) => {
+    event.preventDefault();
     clearMessages("preferences");
+
     try {
       await authService.updatePreferences(preferencesData);
       await fetchMe();
@@ -129,9 +132,8 @@ export default function Profile() {
   return (
     <div className="container py-5">
       <h1 className="h3 mb-4">Profile & Settings</h1>
-      
+
       <div className="row g-4">
-        {/* Profile Card */}
         <div className="col-12 col-lg-6">
           <div className="card shadow-sm border-0 h-100">
             <div className="card-header bg-white border-bottom">
@@ -140,19 +142,30 @@ export default function Profile() {
             <div className="card-body">
               {messages.profile.success && <div className="alert alert-success">{messages.profile.success}</div>}
               {messages.profile.error && <div className="alert alert-danger">{messages.profile.error}</div>}
-              
+
               <form onSubmit={handleUpdateProfile}>
                 <div className="mb-4 text-center">
                   <div className="position-relative d-inline-block">
                     {profileData.avatarUrl ? (
-                      <img src={profileData.avatarUrl} alt="Avatar" className="rounded-circle border" style={{width: "120px", height: "120px", objectFit: "cover"}} />
+                      <img
+                        src={profileData.avatarUrl}
+                        alt="Avatar"
+                        className="rounded-circle border"
+                        style={{ width: "120px", height: "120px", objectFit: "cover" }}
+                      />
                     ) : (
-                      <div className="rounded-circle bg-light d-flex align-items-center justify-content-center border" style={{width: "120px", height: "120px"}}>
-                        <span className="text-muted fs-1">👤</span>
+                      <div
+                        className="rounded-circle bg-light d-flex align-items-center justify-content-center border"
+                        style={{ width: "120px", height: "120px" }}
+                      >
+                        <span className="text-muted fs-1">{"\uD83D\uDC64"}</span>
                       </div>
                     )}
-                    <label className="btn btn-sm btn-dark position-absolute bottom-0 end-0 rounded-circle" style={{width: "32px", height: "32px", padding: "4px"}}>
-                      📷
+                    <label
+                      className="btn btn-sm btn-dark position-absolute bottom-0 end-0 rounded-circle"
+                      style={{ width: "32px", height: "32px", padding: "4px" }}
+                    >
+                      {"\uD83D\uDCF7"}
                       <input type="file" className="d-none" accept="image/*" onChange={handleAvatarUpload} />
                     </label>
                   </div>
@@ -166,13 +179,14 @@ export default function Profile() {
                   <label className="form-label">Display Name</label>
                   <input type="text" className="form-control" name="displayName" value={profileData.displayName} onChange={handleProfileChange} required />
                 </div>
-                <button type="submit" className="btn btn-primary w-100">Update Basic Info</button>
+                <button type="submit" className="btn btn-primary w-100">
+                  Update Basic Info
+                </button>
               </form>
             </div>
           </div>
         </div>
 
-        {/* Password Card */}
         <div className="col-12 col-lg-6">
           <div className="card shadow-sm border-0 h-100">
             <div className="card-header bg-white border-bottom">
@@ -181,7 +195,7 @@ export default function Profile() {
             <div className="card-body">
               {messages.password.success && <div className="alert alert-success">{messages.password.success}</div>}
               {messages.password.error && <div className="alert alert-danger">{messages.password.error}</div>}
-              
+
               <form onSubmit={handleChangePassword}>
                 <div className="mb-3">
                   <label className="form-label">Current Password</label>
@@ -195,13 +209,14 @@ export default function Profile() {
                   <label className="form-label">Confirm New Password</label>
                   <input type="password" className="form-control" name="confirmPassword" value={passwordData.confirmPassword} onChange={handlePasswordChange} required />
                 </div>
-                <button type="submit" className="btn btn-primary">Change Password</button>
+                <button type="submit" className="btn btn-primary">
+                  Change Password
+                </button>
               </form>
             </div>
           </div>
         </div>
 
-        {/* Preferences Card */}
         <div className="col-12">
           <div className="card shadow-sm border-0">
             <div className="card-header bg-white border-bottom">
@@ -210,7 +225,7 @@ export default function Profile() {
             <div className="card-body">
               {messages.preferences.success && <div className="alert alert-success">{messages.preferences.success}</div>}
               {messages.preferences.error && <div className="alert alert-danger">{messages.preferences.error}</div>}
-              
+
               <form onSubmit={handleUpdatePreferences} className="row g-3">
                 <div className="col-md-4">
                   <label className="form-label">Theme</label>
@@ -233,13 +248,14 @@ export default function Profile() {
                   </select>
                 </div>
                 <div className="col-12 mt-4">
-                  <button type="submit" className="btn btn-primary">Save Preferences</button>
+                  <button type="submit" className="btn btn-primary">
+                    Save Preferences
+                  </button>
                 </div>
               </form>
             </div>
           </div>
         </div>
-        
       </div>
     </div>
   );

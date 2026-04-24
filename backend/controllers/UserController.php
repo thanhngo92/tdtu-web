@@ -32,7 +32,7 @@ class UserController extends Controller
     public function updateProfile($request, $response)
     {
         try {
-            $body = $request->body();
+            $body = $request->getBody();
 
             $userId = $_SESSION['user_id'];
             $displayName = trim($body['displayName'] ?? '');
@@ -54,7 +54,7 @@ class UserController extends Controller
     public function changePassword($request, $response)
     {
         try {
-            $body = $request->body();
+            $body = $request->getBody();
 
             $userId = $_SESSION['user_id'];
             $currentPassword = $body['currentPassword'] ?? '';
@@ -74,7 +74,7 @@ class UserController extends Controller
     public function updatePreferences($request, $response)
     {
         try {
-            $body = $request->body();
+            $body = $request->getBody();
 
             $userId = $_SESSION['user_id'];
             $theme = $body['theme'] ?? 'light';

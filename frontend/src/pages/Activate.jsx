@@ -1,33 +1,45 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import authService from "../services/authService";
 import useAuth from "../hooks/useAuth";
 
 export default function Activate() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
-  const navigate = useNavigate();
   const { fetchMe } = useAuth();
   
-  const [status, setStatus] = useState("verifying"); // verifying, success, error
-  const [message, setMessage] = useState("");
+  const [state, setState] = useState(() => {
+    if (!token) {
+      return {
+        status: "error",
+        message: "No activation token provided.",
+      };
+    }
+
+    return {
+      status: "verifying",
+      message: "",
+    };
+  });
 
   useEffect(() => {
     if (!token) {
-      setStatus("error");
-      setMessage("No activation token provided.");
       return;
     }
 
     const activateAccount = async () => {
       try {
         const response = await authService.activate({ token });
-        setStatus("success");
-        setMessage(response?.message || "Account activated successfully!");
+        setState({
+          status: "success",
+          message: response?.message || "Account activated successfully!",
+        });
         await fetchMe(); // Refresh the user to update isActivated status
       } catch (error) {
-        setStatus("error");
-        setMessage(error?.data?.message || error.message || "Failed to activate account.");
+        setState({
+          status: "error",
+          message: error?.data?.message || error.message || "Failed to activate account.",
+        });
       }
     };
 
@@ -40,23 +52,23 @@ export default function Activate() {
         <div className="card-body auth-card-body text-center">
           <h1 className="auth-title mb-4">Account Activation</h1>
           
-          {status === "verifying" && (
+          {state.status === "verifying" && (
             <div>
               <div className="spinner-border text-primary mb-3" role="status"></div>
               <p>Verifying your token...</p>
             </div>
           )}
 
-          {status === "success" && (
+          {state.status === "success" && (
             <div>
-              <div className="alert alert-success fs-5">{message}</div>
+              <div className="alert alert-success fs-5">{state.message}</div>
               <Link to="/login" className="btn btn-primary mt-3">Continue</Link>
             </div>
           )}
 
-          {status === "error" && (
+          {state.status === "error" && (
             <div>
-              <div className="alert alert-danger fs-5">{message}</div>
+              <div className="alert alert-danger fs-5">{state.message}</div>
               <Link to="/" className="btn btn-outline-secondary mt-3">Go to Home</Link>
             </div>
           )}

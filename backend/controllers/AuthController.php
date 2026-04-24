@@ -17,7 +17,7 @@ class AuthController extends Controller
     public function register($request, $response)
     {
         try {
-            $body = $request->body();
+            $body = $request->getBody();
 
             $email = trim($body['email'] ?? '');
             $displayName = trim($body['displayName'] ?? '');
@@ -37,7 +37,7 @@ class AuthController extends Controller
     public function activate($request, $response)
     {
         try {
-            $body = $request->body();
+            $body = $request->getBody();
             $token = trim($body['token'] ?? '');
 
             $result = $this->authService->activate($token);
@@ -53,7 +53,7 @@ class AuthController extends Controller
     public function login($request, $response)
     {
         try {
-            $body = $request->body();
+            $body = $request->getBody();
 
             $email = trim($body['email'] ?? '');
             $password = $body['password'] ?? '';
@@ -91,7 +91,7 @@ class AuthController extends Controller
     public function forgotPassword($request, $response)
     {
         try {
-            $body = $request->body();
+            $body = $request->getBody();
             $email = trim($body['email'] ?? '');
 
             $result = $this->authService->forgotPassword($email);
@@ -107,7 +107,7 @@ class AuthController extends Controller
     public function resetPassword($request, $response)
     {
         try {
-            $body = $request->body();
+            $body = $request->getBody();
 
             $token = trim($body['token'] ?? '');
             $password = $body['password'] ?? '';
@@ -126,7 +126,7 @@ class AuthController extends Controller
     public function resetPasswordOtp($request, $response)
     {
         try {
-            $body = $request->body();
+            $body = $request->getBody();
 
             $email = trim($body['email'] ?? '');
             $otp = trim($body['otp'] ?? '');

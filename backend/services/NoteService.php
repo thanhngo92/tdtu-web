@@ -8,6 +8,8 @@ require_once __DIR__ . '/../models/User.php';
 
 class NoteService
 {
+    private const VERIFIED_NOTE_SESSION_KEY = 'verified_note_access';
+
     private Note $noteModel;
     private NoteImage $noteImageModel;
     private NoteLabel $noteLabelModel;
@@ -40,7 +42,10 @@ class NoteService
         if (!$note) {
             throw new Exception('Note not found', 404);
         }
-        return $this->enrichNoteData($note, $userId, $bypassLock);
+
+        $allowFullAccess = $bypassLock || !$this->isLockedNote($note) || $this->hasVerifiedNoteAccess($id);
+
+        return $this->enrichNoteData($note, $userId, $allowFullAccess);
     }
 
     public function createNote($userId, $data)
@@ -82,6 +87,8 @@ class NoteService
             throw new Exception('You do not have permission to edit this note', 403);
         }
 
+        $this->ensureVerifiedAccessForLockedNote($note, 'edit this locked note');
+
         $title = $data['title'] ?? '';
         $content = $data['content'] ?? '';
         $noteColor = $data['noteColor'] ?? null;
@@ -108,12 +115,11 @@ class NoteService
         }
 
         $isOwner = (int)$note['user_id'] === (int)$userId;
-        $canDelete = $isOwner || ($note['permission'] ?? null) === 'edit';
-        if (!$canDelete) {
+        if (!$isOwner) {
             throw new Exception('You do not have permission to delete this note', 403);
         }
 
-        if (!empty($note['is_locked'])) {
+        if ($this->isLockedNote($note) && !$this->hasVerifiedNoteAccess($id)) {
             if (empty($password) || !$this->noteModel->verifyNotePassword($id, $password)) {
                 throw new Exception('Password is required to delete this locked note', 401);
             }
@@ -122,6 +128,8 @@ class NoteService
         if (!$this->noteModel->delete($id, $userId)) {
             throw new Exception('Failed to delete note', 500);
         }
+
+        $this->clearVerifiedNoteAccess($id);
         return true;
     }
 
@@ -132,6 +140,8 @@ class NoteService
             throw new Exception('Note not found', 404);
         }
 
+        $this->ensureVerifiedAccessForLockedNote($note, 'change the pin status of this locked note');
+
         $newPinStatus = !$note['is_pinned'];
         if (!$this->noteModel->setPinStatus($id, $userId, $newPinStatus)) {
             throw new Exception('Failed to update pin status', 500);
@@ -140,22 +150,79 @@ class NoteService
         return ['is_pinned' => $newPinStatus];
     }
 
-    public function setLock($id, $userId, $password)
+    public function setLock($id, $userId, $data)
     {
-        $isLocked = !empty($password);
-        if (!$this->noteModel->setLockStatus($id, $userId, $isLocked, $password)) {
-            throw new Exception('Failed to update lock status', 500);
+        $note = $this->noteModel->getById($id, $userId);
+        if (!$note) {
+            throw new Exception('Note not found', 404);
         }
-        return true;
+
+        $currentPassword = $data['currentPassword'] ?? '';
+        $newPassword = $data['newPassword'] ?? ($data['password'] ?? '');
+        $confirmPassword = $data['confirmPassword'] ?? '';
+
+        if ($this->isLockedNote($note)) {
+            if (trim($currentPassword) === '' || !$this->noteModel->verifyNotePassword($id, $currentPassword)) {
+                throw new Exception('Current note password is incorrect', 401);
+            }
+
+            if ($newPassword === '' && $confirmPassword === '') {
+                if (!$this->noteModel->setLockStatus($id, $userId, false, null)) {
+                    throw new Exception('Failed to disable password protection', 500);
+                }
+
+                $this->clearVerifiedNoteAccess($id);
+
+                return ['message' => 'Password protection disabled'];
+            }
+
+            if ($newPassword === '' || $confirmPassword === '') {
+                throw new Exception('Please enter the new password twice', 422);
+            }
+
+            if ($newPassword !== $confirmPassword) {
+                throw new Exception('New password and confirmation do not match', 422);
+            }
+
+            if (!$this->noteModel->setLockStatus($id, $userId, true, $newPassword)) {
+                throw new Exception('Failed to update note password', 500);
+            }
+
+            $this->clearVerifiedNoteAccess($id);
+
+            return ['message' => 'Note password updated'];
+        }
+
+        if ($newPassword === '' || $confirmPassword === '') {
+            throw new Exception('Please enter the password twice to enable protection', 422);
+        }
+
+        if ($newPassword !== $confirmPassword) {
+            throw new Exception('Password and confirmation do not match', 422);
+        }
+
+        if (!$this->noteModel->setLockStatus($id, $userId, true, $newPassword)) {
+            throw new Exception('Failed to enable password protection', 500);
+        }
+
+        $this->clearVerifiedNoteAccess($id);
+
+        return ['message' => 'Note locked'];
     }
 
     public function verifyPassword($id, $userId, $password)
     {
+        $note = $this->noteModel->getById($id, $userId);
+        if (!$note) {
+            throw new Exception('Note not found', 404);
+        }
+
         if (!$this->noteModel->verifyNotePassword($id, $password)) {
             throw new Exception('Incorrect password', 401);
         }
-        
-        // Return full note data upon successful verification
+
+        $this->markNoteAsVerified($id);
+
         return $this->getNote($id, $userId, true);
     }
 
@@ -181,6 +248,13 @@ class NoteService
 
     public function shareNote($id, $userId, $email, $role)
     {
+        $note = $this->noteModel->getById($id, $userId);
+        if (!$note) {
+            throw new Exception('Note not found', 404);
+        }
+
+        $this->ensureVerifiedAccessForLockedNote($note, 'share this locked note');
+
         if (empty($email)) {
             throw new Exception('Email is required', 400);
         }
@@ -203,6 +277,13 @@ class NoteService
 
     public function revokeShare($id, $userId, $email)
     {
+        $note = $this->noteModel->getById($id, $userId);
+        if (!$note) {
+            throw new Exception('Note not found', 404);
+        }
+
+        $this->ensureVerifiedAccessForLockedNote($note, 'change sharing for this locked note');
+
         $recipient = $this->userModel->findByEmail($email);
         if (!$recipient) {
             throw new Exception('Recipient not found', 404);
@@ -298,6 +379,43 @@ class NoteService
         }
         foreach ($images as $imgUrl) {
             $this->noteImageModel->create($noteId, $imgUrl);
+        }
+    }
+
+    private function isLockedNote($note)
+    {
+        return !empty($note['is_locked']);
+    }
+
+    private function ensureVerifiedAccessForLockedNote($note, $actionLabel)
+    {
+        if (!$this->isLockedNote($note)) {
+            return;
+        }
+
+        if (!$this->hasVerifiedNoteAccess($note['id'])) {
+            throw new Exception("Please enter the note password before you can {$actionLabel}", 401);
+        }
+    }
+
+    private function markNoteAsVerified($noteId)
+    {
+        if (!isset($_SESSION[self::VERIFIED_NOTE_SESSION_KEY]) || !is_array($_SESSION[self::VERIFIED_NOTE_SESSION_KEY])) {
+            $_SESSION[self::VERIFIED_NOTE_SESSION_KEY] = [];
+        }
+
+        $_SESSION[self::VERIFIED_NOTE_SESSION_KEY][(string)$noteId] = time();
+    }
+
+    private function hasVerifiedNoteAccess($noteId)
+    {
+        return !empty($_SESSION[self::VERIFIED_NOTE_SESSION_KEY][(string)$noteId]);
+    }
+
+    private function clearVerifiedNoteAccess($noteId)
+    {
+        if (isset($_SESSION[self::VERIFIED_NOTE_SESSION_KEY][(string)$noteId])) {
+            unset($_SESSION[self::VERIFIED_NOTE_SESSION_KEY][(string)$noteId]);
         }
     }
 }

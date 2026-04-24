@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import noteService from "../services/noteService";
 
 const MAX_IMAGE_DIMENSION = 1200;
@@ -47,10 +47,24 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
   const [shareRole, setShareRole] = useState("read");
   const [settingsMessage, setSettingsMessage] = useState({ type: "", text: "" });
   const [collaborationMessage, setCollaborationMessage] = useState("");
+  const [isOnline, setIsOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
 
   const saveTimeoutRef = useRef(null);
   const syncTimeoutRef = useRef(null);
   const lastSavedNoteRef = useRef(note ?? null);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     setTitle(note ? note.title : "");
@@ -60,6 +74,11 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
     lastSavedNoteRef.current = note ?? null;
     setSaveMessage("");
     setSettingsMessage({ type: "", text: "" });
+    setCurrentPassword("");
+    setPasswordInput("");
+    setConfirmPassword("");
+    setShareEmail("");
+    setShareRole("read");
 
     if (note?.permission === "edit") {
       setCollaborationMessage("Shared note with edit permission. Changes refresh automatically every 3 seconds.");
@@ -68,7 +87,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
     }
   }, [note]);
 
-  const hasLocalChanges = () => {
+  const hasLocalChanges = useCallback(() => {
     const saved = lastSavedNoteRef.current;
 
     if (!saved) {
@@ -81,7 +100,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
       JSON.stringify(saved.images ?? []) === JSON.stringify(images) &&
       JSON.stringify(saved.labelIds ?? []) === JSON.stringify(labelIds)
     );
-  };
+  }, [content, images, labelIds, title]);
 
   useEffect(() => {
     const saved = lastSavedNoteRef.current;
@@ -107,17 +126,18 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
 
     saveTimeoutRef.current = setTimeout(async () => {
       try {
+        let res = null;
         const payload = { title, content, images, labelIds };
 
         if (note) {
-          const res = await noteService.updateNote(note.id, payload);
+          res = await noteService.updateNote(note.id, payload);
           const savedNote = res?.data ?? null;
           if (savedNote) {
             lastSavedNoteRef.current = savedNote;
             onSaveComplete?.(savedNote);
           }
         } else {
-          const res = await noteService.createNote(payload);
+          res = await noteService.createNote(payload);
           const createdNote = res?.data ?? null;
           if (createdNote) {
             lastSavedNoteRef.current = createdNote;
@@ -125,7 +145,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
           }
         }
 
-        setSaveMessage("All changes saved.");
+        setSaveMessage(res?.offline ? "Saved offline. Sync will run when you reconnect." : "All changes saved.");
       } catch (err) {
         console.error("Auto-save failed", err);
         setSaveMessage("Auto-save failed. Please keep this editor open and try again.");
@@ -168,7 +188,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
         } else {
           setCollaborationMessage("Another editor has newer changes. Save your work first, then reopen the note to refresh.");
         }
-      } catch (err) {
+      } catch {
         setCollaborationMessage("Unable to refresh shared changes right now.");
       } finally {
         if (!isCancelled) {
@@ -183,7 +203,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
       isCancelled = true;
       clearTimeout(syncTimeoutRef.current);
     };
-  }, [note, isSaving, onSaveComplete, title, content, images, labelIds]);
+  }, [note, isSaving, onSaveComplete, hasLocalChanges]);
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -213,26 +233,43 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
   const handleUpdatePassword = async () => {
     if (!note) return;
 
-    if (passwordInput && passwordInput !== confirmPassword) {
-      setSettingsMessage({ type: "danger", text: "New passwords do not match." });
+    if (!isOnline) {
+      setSettingsMessage({ type: "danger", text: "Note security needs an internet connection." });
       return;
     }
 
-    if (note.isLocked && !currentPassword) {
+    if (!note.isLocked) {
+      if (!passwordInput || !confirmPassword) {
+        setSettingsMessage({ type: "danger", text: "Please enter the new password twice." });
+        return;
+      }
+    } else if (!currentPassword) {
       setSettingsMessage({ type: "danger", text: "Please enter the current password before changing note security." });
       return;
     }
 
-    try {
-      if (note.isLocked) {
-        await noteService.verifyNotePassword(note.id, currentPassword);
-      }
+    if (passwordInput !== confirmPassword) {
+      setSettingsMessage({ type: "danger", text: "New passwords do not match." });
+      return;
+    }
 
-      await noteService.setNotePassword(note.id, passwordInput || null);
+    try {
+      await noteService.setNotePassword(note.id, {
+        currentPassword,
+        newPassword: passwordInput,
+        confirmPassword,
+      });
+
       setSettingsMessage({
         type: "success",
-        text: passwordInput ? "Note password updated successfully." : "Password protection disabled."
+        text: note.isLocked
+          ? (passwordInput ? "Note password updated successfully." : "Password protection disabled.")
+          : "Password protection enabled."
       });
+
+      setCurrentPassword("");
+      setPasswordInput("");
+      setConfirmPassword("");
       onClose();
     } catch (err) {
       setSettingsMessage({ type: "danger", text: err?.data?.message || err.message || "Security update failed." });
@@ -347,6 +384,12 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
 
       {showSettings && note && (
         <div className="note-settings-panel mt-3 p-3 bg-light border rounded">
+          {!isOnline && (
+            <div className="alert alert-warning py-2 px-3 small">
+              Sharing and note security need an internet connection. You can still edit note content offline.
+            </div>
+          )}
+
           <h6 className="fw-bold mb-3">Security Settings</h6>
 
           {settingsMessage.text && (
@@ -365,6 +408,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
               />
+              <div className="form-text">Enter the current password to change or disable protection.</div>
             </div>
           )}
 
@@ -378,6 +422,9 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
               />
+              <div className="form-text">
+                {note.isLocked ? "Leave both new password fields empty to disable protection." : "Each note uses its own password."}
+              </div>
             </div>
             <div className="col-md-6">
               <label className="small text-muted mb-1">Confirm Password</label>
@@ -391,8 +438,8 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
             </div>
           </div>
 
-          <button className="btn btn-sm btn-primary w-100 mb-4" onClick={handleUpdatePassword}>
-            {note.isLocked ? "Update Security" : "Enable Password Lock"}
+          <button className="btn btn-sm btn-primary w-100 mb-4" onClick={handleUpdatePassword} disabled={!isOnline}>
+            {note.isLocked ? (passwordInput ? "Update Password" : "Disable Password Lock") : "Enable Password Lock"}
           </button>
 
           <h6 className="fw-bold mb-3">Share Note</h6>
@@ -408,7 +455,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
               <option value="read">Read Only</option>
               <option value="edit">Editor</option>
             </select>
-            <button className="btn btn-sm btn-success" onClick={handleShare}>
+            <button className="btn btn-sm btn-success" onClick={handleShare} disabled={!isOnline}>
               Share
             </button>
           </div>
@@ -424,7 +471,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
                     </span>
                     {share.sharedAt && <small className="text-muted" style={{ fontSize: "0.7rem" }}>Shared on {new Date(share.sharedAt).toLocaleDateString()}</small>}
                   </div>
-                  <button className="btn btn-sm btn-link text-danger py-0" onClick={() => handleRevokeShare(share.email)}>
+                  <button className="btn btn-sm btn-link text-danger py-0" onClick={() => handleRevokeShare(share.email)} disabled={!isOnline}>
                     Revoke
                   </button>
                 </li>
