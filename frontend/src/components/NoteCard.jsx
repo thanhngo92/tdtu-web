@@ -43,9 +43,18 @@ export default function NoteCard({ note, onClick, onPin, onDelete, availableLabe
           {note.title || "Untitled Note"}
         </h5>
 
-        <div className="position-absolute top-0 end-0 p-2 d-flex gap-1 align-items-center" style={{ zIndex: 10 }}>
-          {note.isLocked && <span title="Locked">{"\uD83D\uDD12"}</span>}
-          {isShared && <span title="Shared">{"\uD83D\uDC65"}</span>}
+        <div className="position-absolute d-flex flex-column align-items-center gap-1" style={{ zIndex: 10, top: "0.75rem", right: "0.75rem" }}>
+          {isOwner && (
+            <button
+              className="note-action-btn"
+              onClick={handlePin}
+              title={note.isPinned ? "Unpin" : "Pin"}
+            >
+              {note.isPinned ? "📌" : "📍"}
+            </button>
+          )}
+          {note.isLocked && <span title="Locked" style={{ fontSize: "1rem" }}>{"\uD83D\uDD12"}</span>}
+          {isShared && <span title="Shared" style={{ fontSize: "1rem" }}>{"\uD83D\uDC65"}</span>}
         </div>
       </div>
 
@@ -84,28 +93,20 @@ export default function NoteCard({ note, onClick, onPin, onDelete, availableLabe
           {new Date(note.updatedAt).toLocaleDateString()}
         </span>
 
-        <div className="note-card-actions">
-          {isOwner && (
-            <button
-              className={`note-action-btn ${note.isPinned ? "text-primary border-primary" : ""}`}
-              onClick={handlePin}
-              title={note.isPinned ? "Unpin" : "Pin"}
-            >
-              {note.isPinned ? "\uD83D\uDCCC" : "\uD83D\uDCCD"}
-            </button>
-          )}
-
-          {isOwner && showConfirmDelete ? (
-            <div className="btn-group btn-group-sm m-0 p-0" role="group">
-              <button className="btn btn-danger py-0 px-2" onClick={confirmDelete} style={{ fontSize: "0.75rem" }}>Delete</button>
-              <button className="btn btn-secondary py-0 px-2" onClick={cancelDelete} style={{ fontSize: "0.75rem" }}>Cancel</button>
-            </div>
-          ) : isOwner ? (
-            <button className="note-action-btn text-danger" onClick={handleDelete} title="Delete">
-              {"\uD83D\uDDD1\uFE0F"}
-            </button>
-          ) : null}
-        </div>
+        {isOwner && (
+          <div className="position-absolute" style={{ bottom: "0.75rem", right: "0.75rem", zIndex: 10 }}>
+            {showConfirmDelete ? (
+              <div className="btn-group btn-group-sm m-0 p-0" role="group">
+                <button className="btn btn-danger py-0 px-2" onClick={confirmDelete} style={{ fontSize: "0.75rem" }}>Delete</button>
+                <button className="btn btn-secondary py-0 px-2" onClick={cancelDelete} style={{ fontSize: "0.75rem" }}>Cancel</button>
+              </div>
+            ) : (
+              <button className="note-action-btn" onClick={handleDelete} title="Delete">
+                {"🗑️"}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

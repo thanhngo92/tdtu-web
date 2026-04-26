@@ -5,7 +5,7 @@ import authService from "../services/authService";
 
 export default function Register() {
   const navigate = useNavigate();
-  const { isAuthenticated, fetchMe } = useAuth();
+  const { fetchMe, isAuthenticated } = useAuth();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -65,11 +65,19 @@ export default function Register() {
 
     try {
       const response = await authService.register(formData);
-      await fetchMe(); 
+      const activationLink = response?.data?.debugLink || response?.debugLink || "";
+
       setSuccessData({
         email: formData.email,
-        debugLink: response.debugLink
+        debugLink: activationLink,
       });
+
+      try {
+        await fetchMe();
+      } catch {
+        // The activation link can still be shown even if refreshing auth fails.
+      }
+
       // Don't navigate yet, let them see the activation link
     } catch (error) {
       setErrorMessage(error?.data?.message || error.message || "Register failed");
@@ -78,7 +86,7 @@ export default function Register() {
     }
   };
 
-  if (isAuthenticated) {
+  if (isAuthenticated && !successData) {
     return <Navigate to="/" replace />;
   }
 
@@ -86,36 +94,61 @@ export default function Register() {
     <div className="auth-page">
       <div className="card shadow-sm auth-card">
         <div className="card-body auth-card-body">
-          <div className="text-center mb-4">
-            <h1 className="auth-title">Create account</h1>
-            <p className="auth-subtitle">Register to start using your notes app</p>
-          </div>
+          {!successData && (
+            <div className="text-center mb-4">
+              <h1 className="auth-title">Create an account</h1>
+              <p className="auth-subtitle">Sign up to start using your notes app</p>
+            </div>
+          )}
 
           {successData ? (
-            <div className="alert alert-success" role="alert">
-              <h4 className="alert-heading">Registration Successful!</h4>
-              <p>Your account for <strong>{successData.email}</strong> has been created.</p>
-              <hr />
-              <p className="mb-0">
-                Hệ thống đã gửi email kích hoạt (giả lập). <br />
-                <strong>Dành cho người chấm bài:</strong> Bạn có thể kích hoạt tài khoản ngay bằng cách click vào link bên dưới:
+            <div className="text-center py-4">
+              <div className="display-4 text-success mb-3">{"\u2705"}</div>
+              <h1 className="h4 fw-bold">Check your email</h1>
+              <p className="text-muted mb-4">
+                We've sent a verification link to<br />
+                <strong>{successData.email}</strong>
               </p>
-              <div className="mt-3 text-center">
-                <a 
-                  href={successData.debugLink} 
-                  className="btn btn-success"
-                  target="_blank" 
-                  rel="noopener noreferrer"
+
+              {errorMessage && (
+                <div className="alert alert-danger py-2 small" role="alert">
+                  {errorMessage}
+                </div>
+              )}
+
+              <div className="d-grid gap-2 mb-3">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    const link = successData.debugLink;
+                    if (!link) {
+                      setErrorMessage("Activation link is not available. Please register again.");
+                      return;
+                    }
+                    try {
+                      if (link.startsWith("http")) {
+                        const url = new URL(link);
+                        navigate(url.pathname + url.search);
+                      } else {
+                        navigate(link);
+                      }
+                    } catch {
+                      navigate(link);
+                    }
+                  }}
                 >
-                  Kích hoạt tài khoản ngay
-                </a>
+                  Verify Account
+                </button>
               </div>
-              <div className="mt-3 text-center">
-                <button 
-                  className="btn btn-outline-success btn-sm"
+
+              <div className="auth-switch text-center">
+                <button
+                  type="button"
+                  className="btn btn-link text-decoration-none auth-link-btn small"
                   onClick={() => navigate("/")}
                 >
-                  Bỏ qua và tiếp tục tới Dashboard
+                  Skip for now
                 </button>
               </div>
             </div>
@@ -127,92 +160,92 @@ export default function Register() {
                 </div>
               )}
 
-          <form onSubmit={handleSubmit} noValidate>
-            <div className="mb-3">
-              <label htmlFor="email" className="form-label">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                className="form-control"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Email address"
-                autoComplete="email"
-              />
-            </div>
+              <form onSubmit={handleSubmit} noValidate>
+                <div className="mb-3">
+                  <label htmlFor="email" className="form-label">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    className="form-control"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Enter your email"
+                    autoComplete="email"
+                  />
+                </div>
 
-            <div className="mb-3">
-              <label htmlFor="displayName" className="form-label">
-                Display name
-              </label>
-              <input
-                id="displayName"
-                name="displayName"
-                type="text"
-                className="form-control"
-                value={formData.displayName}
-                onChange={handleChange}
-                placeholder="Full name"
-                autoComplete="nickname"
-              />
-            </div>
+                <div className="mb-3">
+                  <label htmlFor="displayName" className="form-label">
+                    Display name
+                  </label>
+                  <input
+                    id="displayName"
+                    name="displayName"
+                    type="text"
+                    className="form-control"
+                    value={formData.displayName}
+                    onChange={handleChange}
+                    placeholder="Enter your display name"
+                    autoComplete="nickname"
+                  />
+                </div>
 
-            <div className="mb-3">
-              <label htmlFor="password" className="form-label">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                className="form-control"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Password"
-                autoComplete="new-password"
-              />
-            </div>
+                <div className="mb-3">
+                  <label htmlFor="password" className="form-label">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    className="form-control"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Enter your password"
+                    autoComplete="new-password"
+                  />
+                </div>
 
-            <div className="mb-4">
-              <label htmlFor="confirmPassword" className="form-label">
-                Confirm password
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                className="form-control"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm password"
-                autoComplete="new-password"
-              />
-            </div>
+                <div className="mb-4">
+                  <label htmlFor="confirmPassword" className="form-label">
+                    Confirm password
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    className="form-control"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Confirm your password"
+                    autoComplete="new-password"
+                  />
+                </div>
 
-            <button
-              type="submit"
-              className="btn btn-primary w-100"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Signing Up..." : "Sign Up"}
-            </button>
-          </form>
+                <button
+                  type="submit"
+                  className="btn btn-primary w-100"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Signing Up..." : "Sign Up"}
+                </button>
+              </form>
 
-          <div className="auth-switch mt-4">
-            <span className="text-muted">Already have an account? </span>
-            <button
-              type="button"
-              className="btn btn-link text-decoration-none auth-link-btn"
-              onClick={() => navigate("/login")}
-            >
-              Sign In
-            </button>
-          </div>
-        </>
-      )}
+              <div className="auth-switch mt-4">
+                <span className="text-muted">Already have an account? </span>
+                <button
+                  type="button"
+                  className="btn btn-link text-decoration-none auth-link-btn"
+                  onClick={() => navigate("/login")}
+                >
+                  Sign In
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

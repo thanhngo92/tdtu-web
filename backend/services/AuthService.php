@@ -16,7 +16,7 @@ class AuthService
 
     public function login($email, $password)
     {
-        $email = trim($email);
+        $email = strtolower(trim($email));
         $user = $this->userModel->findByEmail($email);
 
         if (!$user) {
@@ -61,9 +61,13 @@ class AuthService
 
     public function register($email, $displayName, $password, $confirmPassword)
     {
-        $email = trim($email);
+        $email = strtolower(trim($email));
         if ($email === '' || $displayName === '' || $password === '' || $confirmPassword === '') {
-            throw new Exception('Email, display name, password and confirm password are required', 422);
+            throw new Exception('All fields are required', 422);
+        }
+
+        if (strlen($password) < 6) {
+            throw new Exception('Password must be at least 6 characters long', 422);
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -121,8 +125,8 @@ class AuthService
 
     public function forgotPassword($email)
     {
-        $email = trim($email);
-        if (trim($email) === '') {
+        $email = strtolower(trim($email));
+        if ($email === '') {
             throw new Exception('Email is required', 422);
         }
 
@@ -149,7 +153,8 @@ class AuthService
         $debugLink = $this->mailService->sendResetPasswordEmail($email, $token, $otp);
         return [
             'message' => 'Reset instructions have been sent to your email.',
-            'debugLink' => $debugLink
+            'debugLink' => $debugLink,
+            'otp' => $otp
         ];
     }
 
@@ -160,7 +165,11 @@ class AuthService
         }
 
         if ($password !== $confirmPassword) {
-            throw new Exception('Password and confirm password do not match', 422);
+            throw new Exception('Passwords do not match', 422);
+        }
+
+        if (strlen($password) < 6) {
+            throw new Exception('New password must be at least 6 characters long', 422);
         }
 
         $user = $this->userModel->findByResetToken($token);
@@ -178,9 +187,9 @@ class AuthService
 
     public function resetPasswordOtp($email, $otp, $password, $confirmPassword)
     {
-        $email = trim($email);
-        if (trim($email) === '' || trim($otp) === '' || $password === '' || $confirmPassword === '') {
-            throw new Exception('Email, OTP, password and confirm password are required', 422);
+        $email = strtolower(trim($email));
+        if ($email === '' || trim($otp) === '' || $password === '' || $confirmPassword === '') {
+            throw new Exception('All fields are required', 422);
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {

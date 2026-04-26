@@ -85,7 +85,7 @@ export default function Login() {
                 className="form-control"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="Email address"
+                placeholder="Enter your email"
                 autoComplete="email"
               />
             </div>
@@ -101,8 +101,8 @@ export default function Login() {
                 className="form-control"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Password"
-                autoComplete="current-password"
+                placeholder="Enter your password"
+                autoComplete="new-password"
               />
             </div>
 

@@ -9,14 +9,11 @@ export default function ForgotPassword() {
 
   const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [debugLink, setDebugLink] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setErrorMessage("");
-    setSuccessMessage("");
 
     if (!email.trim()) {
       setErrorMessage("Email is required.");
@@ -28,17 +25,12 @@ export default function ForgotPassword() {
     try {
       const response = await authService.forgotPassword({ email });
 
-      setSuccessMessage(
-        response?.message || "Reset instructions have been sent."
-      );
-      
-      if (response.debugLink) {
-        setDebugLink(response.debugLink);
-      } else {
-        setTimeout(() => {
-          navigate("/reset-password", { state: { email } });
-        }, 1200);
-      }
+      navigate("/reset-password", { 
+        state: { 
+          email, 
+          successMessage: `Verification code sent to ${email}. Please check your inbox.` 
+        } 
+      });
     } catch (error) {
       setErrorMessage(
         error?.data?.message || error.message || "Failed to submit forgot password request"
@@ -57,9 +49,9 @@ export default function ForgotPassword() {
       <div className="card shadow-sm auth-card">
         <div className="card-body auth-card-body">
           <div className="text-center mb-4">
-            <h1 className="auth-title">Forgot password</h1>
+            <h1 className="auth-title">Forgot Password</h1>
             <p className="auth-subtitle">
-              Enter your email to receive reset instructions
+              Enter your email address and we'll send you a link to reset your password.
             </p>
           </div>
 
@@ -69,24 +61,7 @@ export default function ForgotPassword() {
             </div>
           )}
 
-          {successMessage && (
-            <div className="alert alert-success py-2" role="alert">
-              {successMessage}
-              {debugLink && (
-                <div className="mt-3">
-                  <p className="small mb-2"><strong>Dành cho người chấm bài:</strong> Bạn có thể sử dụng link reset bên dưới:</p>
-                  <a 
-                    href={debugLink} 
-                    className="btn btn-success btn-sm w-100"
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                  >
-                    Reset mật khẩu ngay
-                  </a>
-                </div>
-              )}
-            </div>
-          )}
+
 
           <form onSubmit={handleSubmit} noValidate>
             <div className="mb-4">
@@ -110,17 +85,18 @@ export default function ForgotPassword() {
               className="btn btn-primary w-100"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Submitting..." : "Send reset request"}
+              {isSubmitting ? "Sending..." : "Send Reset Link"}
             </button>
           </form>
 
-          <div className="text-center mt-4">
+          <div className="auth-switch mt-4 text-center">
+            <span className="text-muted">Remember your password? </span>
             <button
               type="button"
-              className="btn btn-link p-0 text-decoration-none"
+              className="btn btn-link text-decoration-none auth-link-btn"
               onClick={() => navigate("/login")}
             >
-              Back to login
+              Sign In
             </button>
           </div>
         </div>

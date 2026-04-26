@@ -180,7 +180,7 @@ export default function Profile() {
                   <input type="text" className="form-control" name="displayName" value={profileData.displayName} onChange={handleProfileChange} required />
                 </div>
                 <button type="submit" className="btn btn-primary w-100">
-                  Update Basic Info
+                  Update Profile
                 </button>
               </form>
             </div>
