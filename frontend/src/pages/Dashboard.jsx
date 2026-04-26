@@ -206,6 +206,10 @@ export default function Dashboard() {
 
   return (
     <div className="app-shell">
+      <div
+        className={`sidebar-overlay ${isSidebarMobileOpen ? "visible" : ""}`}
+        onClick={() => setIsSidebarMobileOpen(false)}
+      ></div>
       <aside className={`app-sidebar ${isSidebarMobileOpen ? "mobile-open" : ""}`}>
         <div
           className={`sidebar-nav-item ${activeTab === "my-notes" && !selectedLabelFilter ? "active" : ""}`}

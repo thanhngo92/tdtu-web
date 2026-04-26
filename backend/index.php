@@ -3,8 +3,18 @@
 $config = require __DIR__ . '/config/config.php';
 
 $corsOrigin = $config['cors']['allowed_origin'];
+$requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
-header("Access-Control-Allow-Origin: $corsOrigin");
+// Allow local network origins or the configured origin
+if ($requestOrigin && (
+    $requestOrigin === $corsOrigin || 
+    preg_match('/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$/', $requestOrigin)
+)) {
+    header("Access-Control-Allow-Origin: $requestOrigin");
+} else {
+    header("Access-Control-Allow-Origin: $corsOrigin");
+}
+
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 header("Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS");

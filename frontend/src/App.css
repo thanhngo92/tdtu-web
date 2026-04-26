@@ -79,6 +79,23 @@ body.dark-theme ::-webkit-scrollbar-thumb {
   flex-grow: 1;
   padding: 1.5rem;
   transition: padding var(--transition-speed);
+  position: relative;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1500;
+  backdrop-filter: blur(2px);
+}
+
+.sidebar-overlay.visible {
+  display: block;
 }
 
 /* ============================================================ 
@@ -131,6 +148,33 @@ body.dark-theme ::-webkit-scrollbar-thumb {
 }
 
 .note-card-ui:hover {
+  border-color: var(--primary-color);
+}
+
+.note-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  justify-content: flex-end;
+}
+
+.note-action-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-main);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.note-action-btn:hover {
+  background: rgba(13, 110, 253, 0.05);
+  color: var(--primary-color);
   border-color: var(--primary-color);
 }
 
@@ -321,6 +365,7 @@ body.dark-theme ::-webkit-scrollbar-thumb {
     height: 100%;
     z-index: 2000;
     border-right: 1px solid var(--border-color);
+    box-shadow: 10px 0 30px rgba(0,0,0,0.1);
   }
 
   .app-sidebar.mobile-open {
