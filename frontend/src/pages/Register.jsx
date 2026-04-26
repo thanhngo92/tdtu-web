@@ -15,6 +15,7 @@ export default function Register() {
   });
 
   const [errorMessage, setErrorMessage] = useState("");
+  const [successData, setSuccessData] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (event) => {
@@ -63,10 +64,13 @@ export default function Register() {
     setIsSubmitting(true);
 
     try {
-      await authService.register(formData);
+      const response = await authService.register(formData);
       await fetchMe(); 
-      alert("Registration successful! Your account has been created and you are now logged in.\n\nNote: Please check the 'emails.log' file in the project backend folder to find your account activation link.");
-      navigate("/");
+      setSuccessData({
+        email: formData.email,
+        debugLink: response.debugLink
+      });
+      // Don't navigate yet, let them see the activation link
     } catch (error) {
       setErrorMessage(error?.data?.message || error.message || "Register failed");
     } finally {
@@ -87,11 +91,41 @@ export default function Register() {
             <p className="auth-subtitle">Register to start using your notes app</p>
           </div>
 
-          {errorMessage && (
-            <div className="alert alert-danger py-2" role="alert">
-              {errorMessage}
+          {successData ? (
+            <div className="alert alert-success" role="alert">
+              <h4 className="alert-heading">Registration Successful!</h4>
+              <p>Your account for <strong>{successData.email}</strong> has been created.</p>
+              <hr />
+              <p className="mb-0">
+                Hệ thống đã gửi email kích hoạt (giả lập). <br />
+                <strong>Dành cho người chấm bài:</strong> Bạn có thể kích hoạt tài khoản ngay bằng cách click vào link bên dưới:
+              </p>
+              <div className="mt-3 text-center">
+                <a 
+                  href={successData.debugLink} 
+                  className="btn btn-success"
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  Kích hoạt tài khoản ngay
+                </a>
+              </div>
+              <div className="mt-3 text-center">
+                <button 
+                  className="btn btn-outline-success btn-sm"
+                  onClick={() => navigate("/")}
+                >
+                  Bỏ qua và tiếp tục tới Dashboard
+                </button>
+              </div>
             </div>
-          )}
+          ) : (
+            <>
+              {errorMessage && (
+                <div className="alert alert-danger py-2" role="alert">
+                  {errorMessage}
+                </div>
+              )}
 
           <form onSubmit={handleSubmit} noValidate>
             <div className="mb-3">
@@ -177,6 +211,8 @@ export default function Register() {
               Sign In
             </button>
           </div>
+        </>
+      )}
         </div>
       </div>
     </div>

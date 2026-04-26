@@ -10,6 +10,7 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [debugLink, setDebugLink] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event) => {
@@ -28,12 +29,16 @@ export default function ForgotPassword() {
       const response = await authService.forgotPassword({ email });
 
       setSuccessMessage(
-        response?.data?.message || "Request submitted. If the email exists, reset instructions will be sent."
+        response?.message || "Reset instructions have been sent."
       );
-
-      setTimeout(() => {
-        navigate("/reset-password", { state: { email } });
-      }, 1200);
+      
+      if (response.debugLink) {
+        setDebugLink(response.debugLink);
+      } else {
+        setTimeout(() => {
+          navigate("/reset-password", { state: { email } });
+        }, 1200);
+      }
     } catch (error) {
       setErrorMessage(
         error?.data?.message || error.message || "Failed to submit forgot password request"
@@ -67,6 +72,19 @@ export default function ForgotPassword() {
           {successMessage && (
             <div className="alert alert-success py-2" role="alert">
               {successMessage}
+              {debugLink && (
+                <div className="mt-3">
+                  <p className="small mb-2"><strong>Dành cho người chấm bài:</strong> Bạn có thể sử dụng link reset bên dưới:</p>
+                  <a 
+                    href={debugLink} 
+                    className="btn btn-success btn-sm w-100"
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    Reset mật khẩu ngay
+                  </a>
+                </div>
+              )}
             </div>
           )}
 

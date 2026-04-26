@@ -43,7 +43,8 @@ class MailService
                 "$link\n\n" .
                 "If you did not register for this account, please ignore this email.";
         
-        return $this->send($email, $subject, $body);
+        $this->send($email, $subject, $body);
+        return $link;
     }
 
     public function sendResetPasswordEmail($email, $token, $otp)
@@ -59,7 +60,8 @@ class MailService
                 "This code will expire in 15 minutes.\n" .
                 "If you did not request this, please ignore this email.";
         
-        return $this->send($email, $subject, $body);
+        $this->send($email, $subject, $body);
+        return $link;
     }
 
     private function resolveLogFile(string $logFile): string

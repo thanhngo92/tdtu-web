@@ -26,6 +26,11 @@ if (is_file($envPath) && is_readable($envPath)) {
     }
 }
 
+// Dynamic Host Detection for multi-device testing (LAN)
+$serverHost = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
+$serverIp = explode(':', $serverHost)[0];
+$defaultFrontendUrl = "http://$serverIp:5173";
+
 return [
     'db' => [
         'host' => getenv('DB_HOST') ?: 'localhost',
@@ -35,8 +40,8 @@ return [
         'password' => getenv('DB_PASS') ?: '',
     ],
     'app' => [
-        'url' => getenv('APP_URL') ?: 'http://localhost:8000',
-        'frontend_url' => getenv('FRONTEND_URL') ?: 'http://localhost:5173',
+        'url' => getenv('APP_URL') ?: "http://$serverHost",
+        'frontend_url' => getenv('FRONTEND_URL') ?: $defaultFrontendUrl,
         'debug' => filter_var(getenv('APP_DEBUG') ?: 'true', FILTER_VALIDATE_BOOLEAN),
     ],
     'mail' => [
@@ -53,7 +58,7 @@ return [
         'domain' => getenv('SESSION_DOMAIN') ?: '',
     ],
     'cors' => [
-        'allowed_origin' => getenv('CORS_ALLOWED_ORIGIN') ?: 'http://localhost:5173',
+        'allowed_origin' => getenv('CORS_ALLOWED_ORIGIN') ?: $defaultFrontendUrl,
         'allow_credentials' => true,
     ],
 ];
