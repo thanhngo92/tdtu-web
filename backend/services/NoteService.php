@@ -157,6 +157,11 @@ class NoteService
             throw new Exception('Note not found', 404);
         }
 
+        // Only owners can change lock settings
+        if ((int)$note['user_id'] !== (int)$userId) {
+            throw new Exception('Only the owner can manage note security', 403);
+        }
+
         $currentPassword = $data['currentPassword'] ?? '';
         $newPassword = $data['newPassword'] ?? ($data['password'] ?? '');
         $confirmPassword = $data['confirmPassword'] ?? '';
@@ -172,8 +177,7 @@ class NoteService
                 }
 
                 $this->clearVerifiedNoteAccess($id);
-
-                return ['message' => 'Password protection disabled'];
+                return $this->getNote($id, $userId); // Return the now-unlocked note
             }
 
             if ($newPassword === '' || $confirmPassword === '') {
@@ -189,8 +193,7 @@ class NoteService
             }
 
             $this->clearVerifiedNoteAccess($id);
-
-            return ['message' => 'Note password updated'];
+            return $this->getNote($id, $userId);
         }
 
         if ($newPassword === '' || $confirmPassword === '') {
@@ -207,7 +210,7 @@ class NoteService
 
         $this->clearVerifiedNoteAccess($id);
 
-        return ['message' => 'Note locked'];
+        return $this->getNote($id, $userId); // Return the newly locked note (will be redacted)
     }
 
     public function verifyPassword($id, $userId, $password)

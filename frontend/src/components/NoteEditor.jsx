@@ -115,6 +115,10 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
       return;
     }
 
+    if (note?.permission === "read") {
+      return;
+    }
+
     if (!note && !title.trim() && !content.trim() && images.length === 0) {
       return;
     }
@@ -318,6 +322,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
         placeholder="Untitled Note"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        readOnly={note?.permission === "read"}
       />
 
       <textarea
@@ -327,6 +332,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
         style={{ resize: "none" }}
         value={content}
         onChange={(e) => setContent(e.target.value)}
+        readOnly={note?.permission === "read"}
       />
 
       {images.length > 0 && (
@@ -336,7 +342,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
               <img src={img} alt="attachment" style={{ height: "80px", width: "auto", borderRadius: "5px", objectFit: "cover" }} />
               <button
                 className="btn btn-sm btn-danger position-absolute top-0 end-0 p-0"
-                style={{ width: "20px", height: "20px", borderRadius: "50%" }}
+                style={{ width: "20px", height: "20px", borderRadius: "50%", display: note?.permission === "read" ? "none" : "block" }}
                 onClick={() => removeImage(i)}
               >
                 &times;
@@ -352,7 +358,8 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
             <span
               key={label.id}
               className={`badge rounded-pill cursor-pointer ${labelIds.includes(label.id) ? "bg-primary" : "bg-light text-dark border"}`}
-              onClick={() => toggleLabel(label.id)}
+              onClick={() => note?.permission !== "read" && toggleLabel(label.id)}
+              style={{ cursor: note?.permission === "read" ? "default" : "pointer" }}
             >
               {label.name}
             </span>
@@ -362,12 +369,12 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
 
       <div className="note-editor-toolbar d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
         <div className="note-editor-actions d-flex align-items-center gap-3">
-          <label className="btn btn-sm btn-outline-secondary mb-0">
+          <label className={`btn btn-sm btn-outline-secondary mb-0 ${note?.permission === "read" ? "disabled" : ""}`}>
             Images
-            <input type="file" multiple accept="image/*" className="d-none" onChange={handleImageUpload} />
+            <input type="file" multiple accept="image/*" className="d-none" onChange={handleImageUpload} disabled={note?.permission === "read"} />
           </label>
 
-          {note && (
+          {note && note.permission === "owner" && (
             <button className={`btn btn-sm ${showSettings ? "btn-secondary" : "btn-outline-secondary"}`} onClick={() => setShowSettings(!showSettings)}>
               Security and Share
             </button>

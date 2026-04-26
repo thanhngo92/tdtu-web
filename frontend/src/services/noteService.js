@@ -266,15 +266,21 @@ const noteService = {
     };
   },
 
-  setNotePassword(id, payload) {
+  async setNotePassword(id, payload) {
     if (!isBrowserOnline()) {
       throw createOfflineOnlyError("Note security settings require an internet connection.");
     }
 
-    return request(`/notes/${id}/lock`, {
+    const response = await request(`/notes/${id}/lock`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
+
+    if (response.data) {
+      await saveNote(response.data, { syncStatus: "synced", isLocalOnly: false });
+    }
+
+    return response;
   },
 
   verifyNotePassword(id, password) {
