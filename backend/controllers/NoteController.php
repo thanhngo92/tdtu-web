@@ -22,7 +22,7 @@ class NoteController extends Controller
         try {
             $notes = $this->noteService->getAllNotes($userId);
             return $this->success($response, $notes);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }
@@ -36,7 +36,7 @@ class NoteController extends Controller
         try {
             $note = $this->noteService->getNote($id, $userId);
             return $this->success($response, $note);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }
@@ -50,7 +50,7 @@ class NoteController extends Controller
         try {
             $note = $this->noteService->createNote($userId, $data);
             return $this->success($response, $note, 201);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }
@@ -65,7 +65,7 @@ class NoteController extends Controller
         try {
             $note = $this->noteService->updateNote($id, $userId, $data);
             return $this->success($response, $note);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }
@@ -81,7 +81,7 @@ class NoteController extends Controller
         try {
             $this->noteService->deleteNote($id, $userId, $password);
             return $this->success($response, ['message' => 'Note deleted']);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }
@@ -95,7 +95,7 @@ class NoteController extends Controller
         try {
             $result = $this->noteService->togglePin($id, $userId);
             return $this->success($response, $result);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }
@@ -110,7 +110,7 @@ class NoteController extends Controller
         try {
             $result = $this->noteService->setLock($id, $userId, $body);
             return $this->success($response, $result);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }
@@ -126,7 +126,7 @@ class NoteController extends Controller
         try {
             $note = $this->noteService->verifyPassword($id, $userId, $password);
             return $this->success($response, $note);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }
@@ -139,7 +139,7 @@ class NoteController extends Controller
         try {
             $sharedNotes = $this->noteService->getSharedNotes($userId);
             return $this->success($response, $sharedNotes);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }
@@ -156,7 +156,7 @@ class NoteController extends Controller
         try {
             $this->noteService->shareNote($id, $userId, $email, $role);
             return $this->success($response, ['message' => 'Note shared successfully']);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }
@@ -172,7 +172,7 @@ class NoteController extends Controller
         try {
             $this->noteService->revokeShare($id, $userId, $email);
             return $this->success($response, ['message' => 'Share revoked']);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }

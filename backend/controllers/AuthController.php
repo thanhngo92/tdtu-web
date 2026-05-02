@@ -27,7 +27,7 @@ class AuthController extends Controller
             $result = $this->authService->register($email, $displayName, $password, $confirmPassword);
 
             return $this->success($response, $result, 201);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $code = $e->getCode();
             $status = ($code >= 400 && $code < 600) ? $code : 500;
             return $this->error($response, $e->getMessage(), $status);
@@ -43,7 +43,7 @@ class AuthController extends Controller
             $result = $this->authService->activate($token);
 
             return $this->success($response, $result, 200);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $code = $e->getCode();
             $status = ($code >= 400 && $code < 600) ? $code : 500;
             return $this->error($response, $e->getMessage(), $status);
@@ -68,7 +68,7 @@ class AuthController extends Controller
                 'message' => 'Login successful',
                 'user' => $user
             ], 200);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $code = $e->getCode();
             $status = ($code >= 400 && $code < 600) ? $code : 500;
             return $this->error($response, $e->getMessage(), $status);
@@ -83,7 +83,7 @@ class AuthController extends Controller
             return $this->success($response, [
                 'message' => 'Logout successful'
             ], 200);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, 'Logout failed', 500);
         }
     }
@@ -97,7 +97,7 @@ class AuthController extends Controller
             $result = $this->authService->forgotPassword($email);
 
             return $this->success($response, $result, 200);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $code = $e->getCode();
             $status = ($code >= 400 && $code < 600) ? $code : 500;
             return $this->error($response, $e->getMessage(), $status);
@@ -116,7 +116,7 @@ class AuthController extends Controller
             $result = $this->authService->resetPassword($token, $password, $confirmPassword);
 
             return $this->success($response, $result, 200);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $code = $e->getCode();
             $status = ($code >= 400 && $code < 600) ? $code : 500;
             return $this->error($response, $e->getMessage(), $status);
@@ -136,7 +136,7 @@ class AuthController extends Controller
             $result = $this->authService->resetPasswordOtp($email, $otp, $password, $confirmPassword);
 
             return $this->success($response, $result, 200);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $code = $e->getCode();
             $status = ($code >= 400 && $code < 600) ? $code : 500;
             return $this->error($response, $e->getMessage(), $status);

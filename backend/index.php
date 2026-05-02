@@ -47,6 +47,25 @@ $conn = $database->connect();
 
 $router = new Router($conn);
 
+// Auto-initialize database tables if needed
+try {
+    require_once __DIR__ . '/models/User.php';
+    require_once __DIR__ . '/models/Note.php';
+    require_once __DIR__ . '/models/Label.php';
+    require_once __DIR__ . '/models/NoteImage.php';
+    require_once __DIR__ . '/models/NoteLabel.php';
+    require_once __DIR__ . '/models/NoteShare.php';
+
+    (new User($conn))->createTable();
+    (new Note($conn))->createTable();
+    (new Label($conn))->createTable();
+    (new NoteImage($conn))->createTable();
+    (new NoteLabel($conn))->createTable();
+    (new NoteShare($conn))->createTable();
+} catch (Throwable $e) {
+    error_log("Database initialization error: " . $e->getMessage());
+}
+
 require_once __DIR__ . '/routes/auth.php';
 require_once __DIR__ . '/routes/user.php';
 require_once __DIR__ . '/routes/note.php';

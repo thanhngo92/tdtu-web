@@ -22,7 +22,7 @@ class LabelController extends Controller
         try {
             $labels = $this->labelService->getAllLabels($userId);
             return $this->success($response, $labels);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }
@@ -37,7 +37,7 @@ class LabelController extends Controller
         try {
             $label = $this->labelService->createLabel($userId, $name);
             return $this->success($response, $label, 201);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }
@@ -53,7 +53,7 @@ class LabelController extends Controller
         try {
             $label = $this->labelService->updateLabel($id, $userId, $name);
             return $this->success($response, $label);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }
@@ -67,7 +67,7 @@ class LabelController extends Controller
         try {
             $this->labelService->deleteLabel($id, $userId);
             return $this->success($response, ['message' => 'Label deleted']);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
         }
     }

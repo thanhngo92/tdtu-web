@@ -22,7 +22,7 @@ class UserController extends Controller
         try {
             $user = $this->authService->getCurrentUser();
             return $this->success($response, $user, 200);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $code = $e->getCode();
             $status = ($code >= 400 && $code < 600) ? $code : 500;
             return $this->error($response, $e->getMessage(), $status);
@@ -44,7 +44,7 @@ class UserController extends Controller
                 'message' => 'Profile updated successfully',
                 'user' => $user
             ], 200);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $code = $e->getCode();
             $status = ($code >= 400 && $code < 600) ? $code : 500;
             return $this->error($response, $e->getMessage(), $status);
@@ -64,7 +64,7 @@ class UserController extends Controller
             $result = $this->userService->changePassword($userId, $currentPassword, $newPassword, $confirmPassword);
 
             return $this->success($response, $result, 200);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $code = $e->getCode();
             $status = ($code >= 400 && $code < 600) ? $code : 500;
             return $this->error($response, $e->getMessage(), $status);
@@ -84,7 +84,7 @@ class UserController extends Controller
             $result = $this->userService->updatePreferences($userId, $theme, $fontSize, $noteColor);
 
             return $this->success($response, $result, 200);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $code = $e->getCode();
             $status = ($code >= 400 && $code < 600) ? $code : 500;
             return $this->error($response, $e->getMessage(), $status);
