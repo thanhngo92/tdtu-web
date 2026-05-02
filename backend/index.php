@@ -30,9 +30,9 @@ session_set_cookie_params([
     'lifetime' => 0,
     'path' => $config['session']['path'],
     'domain' => $config['session']['domain'],
-    'secure' => $config['session']['secure'],
+    'secure' => $config['session']['secure'] || (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'),
     'httponly' => $config['session']['httponly'],
-    'samesite' => $config['session']['samesite'],
+    'samesite' => (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'None' : $config['session']['samesite'],
 ]);
 
 session_start();

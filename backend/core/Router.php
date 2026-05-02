@@ -42,6 +42,11 @@ class Router
 
         $method = $request->getMethod();
         $uri = $request->getUri();
+        
+        // Normalize URI: strip trailing slash for matching
+        if ($uri !== '/') {
+            $uri = rtrim($uri, '/');
+        }
 
         $handler = $this->routes[$method][$uri] ?? null;
         $params = [];

@@ -33,11 +33,11 @@ $defaultFrontendUrl = "http://$serverIp:5173";
 
 return [
     'db' => [
-        'host' => getenv('DB_HOST') ?: 'localhost',
-        'port' => getenv('DB_PORT') ?: '3306',
-        'dbname' => getenv('DB_NAME') ?: 'notes_app',
-        'username' => getenv('DB_USER') ?: 'root',
-        'password' => getenv('DB_PASS') ?: '',
+        'host' => getenv('DB_HOST') ?: (getenv('MYSQLHOST') ?: 'localhost'),
+        'port' => getenv('DB_PORT') ?: (getenv('MYSQLPORT') ?: '3306'),
+        'dbname' => getenv('DB_NAME') ?: (getenv('MYSQLDATABASE') ?: 'notes_app'),
+        'username' => getenv('DB_USER') ?: (getenv('MYSQLUSER') ?: 'root'),
+        'password' => getenv('DB_PASS') ?: (getenv('MYSQLPASSWORD') ?: ''),
     ],
     'app' => [
         'url' => getenv('APP_URL') ?: "http://$serverHost",

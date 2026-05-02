@@ -9,13 +9,13 @@ class Controller
         $this->conn = $conn;
     }
 
-    protected function success(Response $response, $data = [], int $status = 200)
+    protected function success(Response $response, $data = [], $status = 200)
     {
-        return $response->success($data, $status);
+        return $response->success($data, (int)$status);
     }
 
-    protected function error(Response $response, string $message = 'Error', int $status = 400, $errors = null)
+    protected function error(Response $response, string $message = 'Error', $status = 400, $errors = null)
     {
-        return $response->error($message, $status, $errors);
+        return $response->error($message, (int)$status, $errors);
     }
 }
