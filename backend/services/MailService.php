@@ -37,9 +37,10 @@ class MailService
                 $mail->SMTPAuth   = true;
                 $mail->Username   = $this->config['mail']['smtp']['username'];
                 $mail->Password   = $this->config['mail']['smtp']['password'];
-                $mail->SMTPSecure = $this->config['mail']['smtp']['encryption'];
+                $encryption = strtolower($this->config['mail']['smtp']['encryption']);
+                $mail->SMTPSecure = ($encryption === 'ssl') ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
                 $mail->Port       = $this->config['mail']['smtp']['port'];
-                $mail->Timeout    = 15; // Limit waiting time to 15 seconds
+                $mail->Timeout    = 20; // Increased timeout for slow cloud connections
                 
                 // Add SSL options to bypass potential cloud blocking/verification issues
                 $mail->SMTPOptions = [
