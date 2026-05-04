@@ -3,6 +3,7 @@ import useAuth from "../hooks/useAuth";
 import useNotes from "../hooks/useNotes";
 import noteService from "../services/noteService";
 import { syncPendingChanges } from "../services/syncService";
+import { createWebSocket } from "../services/realtimeService";
 import NoteCard from "../components/NoteCard";
 import NoteEditor from "../components/NoteEditor";
 import LabelManager from "../components/LabelManager";
@@ -143,20 +144,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Real-time synchronization (Rubrik ID 24)
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
-    let wsHost = window.location.hostname;
-    
-    if (apiBaseUrl.startsWith("http")) {
-      try {
-        wsHost = new URL(apiBaseUrl).hostname;
-      } catch {
-        // Fallback to current hostname
-      }
-    }
-
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    // NoteMate uses port 8080 for WebSocket
-    const socket = new WebSocket(`${protocol}//${wsHost}:8080`);
+    const socket = createWebSocket();
     socketRef.current = socket;
 
     socket.onopen = () => { };

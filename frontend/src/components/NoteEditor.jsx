@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import noteService from "../services/noteService";
+import { createWebSocket } from "../services/realtimeService";
 
 const MAX_IMAGE_DIMENSION = 1200;
 const IMAGE_QUALITY = 0.82;
@@ -52,7 +53,6 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
   const saveTimeoutRef = useRef(null);
   const lastSavedNoteRef = useRef(note ?? null);
   const socketRef = useRef(null);
-  const SOCKET_URL = `ws://${window.location.hostname}:8080`;
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -112,7 +112,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
       return;
     }
 
-    const socket = new WebSocket(SOCKET_URL);
+    const socket = createWebSocket();
     socketRef.current = socket;
 
     socket.onopen = () => {
@@ -120,7 +120,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
       socket.send(JSON.stringify({ action: "join", noteId: note.id }));
     };
 
-    socket.onmessage = (event) => {
+    socket.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data);
         if (data.action === "note-deleted" && data.noteId === note.id) {
@@ -130,18 +130,20 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
         }
 
         if (data.action === "note-updated" && data.noteId === note.id) {
-          // Check if we have unsaved changes before overriding
           if (!hasLocalChanges() && !isSaving) {
-            setTitle(data.title);
-            setContent(data.content);
+            const response = await noteService.getNote(note.id);
+            const updatedNote = response?.data;
+
+            if (!updatedNote) {
+              return;
+            }
+
+            setTitle(updatedNote.title);
+            setContent(updatedNote.content);
+            setImages(updatedNote.images ?? []);
+            setLabelIds(updatedNote.labelIds ?? []);
             setCollaborationMessage("Note updated by collaborator.");
-            
-            // Update last saved ref to prevent feedback loop
-            lastSavedNoteRef.current = {
-                ...lastSavedNoteRef.current,
-                title: data.title,
-                content: data.content
-            };
+            lastSavedNoteRef.current = updatedNote;
           } else {
             setCollaborationMessage("Collaborator made changes. Finish your edits to sync.");
           }
@@ -204,9 +206,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
             if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
                 socketRef.current.send(JSON.stringify({
                     action: 'note-updated',
-                    noteId: note.id,
-                    title: title,
-                    content: content
+                    noteId: note.id
                 }));
             }
           }

@@ -63,6 +63,7 @@ class NoteShare
                 INNER JOIN notes n ON ns.note_id = n.id
                 INNER JOIN users u ON ns.shared_with_user_id = u.id
                 WHERE ns.owner_id = :owner_id
+                  AND ns.revoked_at IS NULL
                 ORDER BY ns.shared_at DESC";
 
         $stmt = $this->conn->prepare($sql);

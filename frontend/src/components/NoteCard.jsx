@@ -1,5 +1,3 @@
-import { useMemo } from "react";
-
 /**
  * NoteCard Component
  * Displays a summary of a note including title, content preview, pinned status, and labels.

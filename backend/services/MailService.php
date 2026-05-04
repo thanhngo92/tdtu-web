@@ -70,10 +70,12 @@ class MailService
             $mail->Timeout    = 10; // Set a lower timeout for faster fallback
             $mail->SMTPKeepAlive = true;
             
-            // Advanced Debugging (Logs directly to Railway)
+            // Advanced Debugging (Logs to file AND Railway STDOUT via error_log)
             $mail->SMTPDebug  = 2; 
             $mail->Debugoutput = function($str, $level) {
-                file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] SMTP DEBUG: $str\n", FILE_APPEND);
+                $logEntry = "[SMTP DEBUG] $str";
+                file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] $logEntry\n", FILE_APPEND);
+                error_log($logEntry); // This makes it visible in Railway logs
             };
 
             $mail->SMTPOptions = [
