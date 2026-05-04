@@ -2,7 +2,7 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshAuth } = useAuth();
   const location = useLocation();
 
   const handleLogout = async () => {
@@ -69,8 +69,15 @@ export default function Layout() {
       )}
 
       {user && !user.isActivated && (
-        <div className="bg-warning text-dark text-center py-2 px-3 fw-semibold shadow-sm">
-          {"\u26A0\uFE0F"} Your account is unverified. Please check your email to complete the activation process.
+        <div className="bg-warning text-dark text-center py-2 px-3 fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-3">
+          <span>{"\u26A0\uFE0F"} Your account is unverified. Please check your email to complete the activation process.</span>
+          <button 
+            className="btn btn-sm btn-dark py-0 px-3 fw-bold" 
+            style={{ fontSize: '0.75rem', height: '24px' }}
+            onClick={() => refreshAuth()}
+          >
+            I've activated it
+          </button>
         </div>
       )}
 

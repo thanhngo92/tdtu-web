@@ -382,20 +382,7 @@ export default function Dashboard() {
           />
         )}
 
-        {user && !user.isActive && (
-          <div className="alert alert-warning border-0 shadow-sm mb-4 d-flex align-items-center justify-content-between settings-panel-anim">
-            <div className="d-flex align-items-center gap-3">
-              <span className="fs-4">✉️</span>
-              <div>
-                <h6 className="mb-0 fw-bold">Account Unverified</h6>
-                <p className="mb-0 small">Please check your email to activate your account and remove this notification.</p>
-              </div>
-            </div>
-            <button className="btn btn-sm btn-outline-warning border-0" onClick={refreshAuth}>
-              I've activated it
-            </button>
-          </div>
-        )}
+
 
         {isEditorOpen && (
           <div className="mb-4">
