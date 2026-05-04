@@ -80,15 +80,19 @@ export default function NoteCard({ note, onClick, onPin, onDelete, availableLabe
         <span className="text-muted small" style={{ fontSize: "0.75rem" }}>
           {new Date(note.updatedAt).toLocaleDateString()}
         </span>
-
-        {isOwner && (
-          <div className="position-absolute" style={{ bottom: "0.75rem", right: "0.75rem", zIndex: 10 }}>
-            <button className="note-action-btn" onClick={handleDelete} title="Delete">
-              {"\uD83D\uDDD1\uFE0F"}
-            </button>
-          </div>
-        )}
       </div>
+
+      {isOwner && (
+        <button
+          type="button"
+          className="note-action-btn position-absolute"
+          onClick={handleDelete}
+          title="Delete"
+          style={{ bottom: "0.5rem", right: "0.5rem", width: "32px", height: "32px", zIndex: 20 }}
+        >
+          {"\uD83D\uDDD1\uFE0F"}
+        </button>
+      )}
     </div>
   );
 }
