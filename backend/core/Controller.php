@@ -18,4 +18,11 @@ class Controller
     {
         return $response->error($message, (int)$status, $errors);
     }
+
+    protected function handleException(Response $response, Throwable $e)
+    {
+        $code = $e->getCode();
+        $status = ($code >= 400 && $code < 600) ? $code : 500;
+        return $this->error($response, $e->getMessage(), $status);
+    }
 }

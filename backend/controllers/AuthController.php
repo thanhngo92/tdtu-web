@@ -28,9 +28,7 @@ class AuthController extends Controller
 
             return $this->success($response, $result, 201);
         } catch (Throwable $e) {
-            $code = $e->getCode();
-            $status = ($code >= 400 && $code < 600) ? $code : 500;
-            return $this->error($response, $e->getMessage(), $status);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -44,9 +42,7 @@ class AuthController extends Controller
 
             return $this->success($response, $result, 200);
         } catch (Throwable $e) {
-            $code = $e->getCode();
-            $status = ($code >= 400 && $code < 600) ? $code : 500;
-            return $this->error($response, $e->getMessage(), $status);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -69,9 +65,7 @@ class AuthController extends Controller
                 'user' => $user
             ], 200);
         } catch (Throwable $e) {
-            $code = $e->getCode();
-            $status = ($code >= 400 && $code < 600) ? $code : 500;
-            return $this->error($response, $e->getMessage(), $status);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -98,9 +92,7 @@ class AuthController extends Controller
 
             return $this->success($response, $result, 200);
         } catch (Throwable $e) {
-            $code = $e->getCode();
-            $status = ($code >= 400 && $code < 600) ? $code : 500;
-            return $this->error($response, $e->getMessage(), $status);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -117,9 +109,7 @@ class AuthController extends Controller
 
             return $this->success($response, $result, 200);
         } catch (Throwable $e) {
-            $code = $e->getCode();
-            $status = ($code >= 400 && $code < 600) ? $code : 500;
-            return $this->error($response, $e->getMessage(), $status);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -137,9 +127,7 @@ class AuthController extends Controller
 
             return $this->success($response, $result, 200);
         } catch (Throwable $e) {
-            $code = $e->getCode();
-            $status = ($code >= 400 && $code < 600) ? $code : 500;
-            return $this->error($response, $e->getMessage(), $status);
+            return $this->handleException($response, $e);
         }
     }
 }

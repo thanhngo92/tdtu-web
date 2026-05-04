@@ -91,35 +91,21 @@ class AuthService
 
             $this->userModel->saveActivationToken($userId, $token, $expires);
 
-            // Send actual activation email
-            // We use a nested try-catch to make email sending non-blocking for the user
-            $appUrl = rtrim($this->config['app']['frontend_url'] ?? '', '/');
-            $activationLink = "$appUrl/activate?token=$token";
+            // Get user data before commit
+            $user = $this->userModel->getById($userId);
             
+            $db->commit();
+
+            // Auto-login after successful registration (Criteria 2.1)
+            session_regenerate_id(true);
+            $_SESSION['user_id'] = $userId;
+            
+            // Send activation email (Non-blocking approach)
             try {
                 $this->mailService->sendActivationEmail($email, $displayName, $token);
             } catch (Throwable $mailError) {
-                // Log the mail error but don't stop the registration flow
-                error_log("Non-blocking mail error: " . $mailError->getMessage());
+                error_log("Post-registration mail error: " . $mailError->getMessage());
             }
-
-            $user = $this->userModel->getById($userId);
-            $db->commit();
-
-            // Auto-login after registration
-            session_regenerate_id(true);
-            $_SESSION['user_id'] = $userId;
-            
-            $user = $this->userModel->getById($userId);
-            $db->commit();
-
-            // Auto-login after registration (Prioritize session over email)
-            session_regenerate_id(true);
-            $_SESSION['user_id'] = $userId;
-            session_write_close(); // Force save session now
-            
-            // Send email - this will no longer crash the process
-            $this->mailService->sendActivationEmail($email, $displayName, $token);
 
             return [
                 'message' => 'Registration successful.',

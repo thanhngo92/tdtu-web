@@ -17,9 +17,11 @@ class NoteService
     private NoteShare $noteShareModel;
     private User $userModel;
     private MailService $mailService;
+    private PDO $db;
 
     public function __construct(PDO $db)
     {
+        $this->db = $db;
         $this->noteModel = new Note($db);
         $this->noteImageModel = new NoteImage($db);
         $this->noteLabelModel = new NoteLabel($db);
@@ -65,16 +67,26 @@ class NoteService
             $noteColor = $user['note_color'] ?? 'default';
         }
 
-        $noteId = $this->noteModel->create($userId, $title, $content, $noteColor);
+        $this->db->beginTransaction();
 
-        if (!$noteId) {
-            throw new Exception('Failed to create note', 500);
+        try {
+            $noteId = $this->noteModel->create($userId, $title, $content, $noteColor);
+
+            if (!$noteId) {
+                throw new Exception('Failed to create note', 500);
+            }
+
+            $this->syncLabels($noteId, $labelIds);
+            $this->syncImages($noteId, $images);
+
+            $this->db->commit();
+            return $this->getNote($noteId, $userId);
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
         }
-
-        $this->syncLabels($noteId, $labelIds);
-        $this->syncImages($noteId, $images);
-
-        return $this->getNote($noteId, $userId);
     }
 
     public function updateNote($id, $userId, $data)
@@ -92,22 +104,32 @@ class NoteService
 
         $this->ensureVerifiedAccessForLockedNote($note, 'edit this locked note');
 
-        $title = $data['title'] ?? '';
-        $content = $data['content'] ?? '';
-        $noteColor = $data['noteColor'] ?? null;
-        $labelIds = $data['labelIds'] ?? [];
-        $images = $data['images'] ?? [];
+        $this->db->beginTransaction();
 
-        $success = $this->noteModel->update($id, $userId, $title, $content, $noteColor);
+        try {
+            $title = $data['title'] ?? '';
+            $content = $data['content'] ?? '';
+            $noteColor = $data['noteColor'] ?? null;
+            $labelIds = $data['labelIds'] ?? [];
+            $images = $data['images'] ?? [];
 
-        if (!$success) {
-            throw new Exception('Failed to update note or note not found', 500);
+            $success = $this->noteModel->update($id, $userId, $title, $content, $noteColor);
+
+            if (!$success) {
+                throw new Exception('Failed to update note or note not found', 500);
+            }
+
+            $this->syncLabels($id, $labelIds);
+            $this->syncImages($id, $images);
+
+            $this->db->commit();
+            return $this->getNote($id, $userId);
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
         }
-
-        $this->syncLabels($id, $labelIds);
-        $this->syncImages($id, $images);
-
-        return $this->getNote($id, $userId);
     }
 
     public function deleteNote($id, $userId, $password = null)

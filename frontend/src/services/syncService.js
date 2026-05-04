@@ -101,24 +101,19 @@ export async function syncPendingChanges() {
         }
 
         if (item.action === "pin") {
-          const currentResponse = await request(`/notes/${item.noteId}`, {
-            method: "GET",
+          // Simply trigger the toggle on server
+          const response = await request(`/notes/${item.noteId}/pin`, {
+            method: "POST",
           });
-
-          const currentPinnedState = Boolean(currentResponse?.data?.isPinned);
-          const targetPinnedState = Boolean(item.payload?.isPinned);
-
-          if (currentPinnedState !== targetPinnedState) {
-            await request(`/notes/${item.noteId}/pin`, {
-              method: "POST",
+          
+          // Update local cache with the new pinned status
+          const note = await getNoteById(item.noteId);
+          if (note) {
+            await saveNote(note, { 
+              isPinned: response.data.is_pinned, 
+              syncStatus: "synced" 
             });
           }
-
-          const latestResponse = await request(`/notes/${item.noteId}`, {
-            method: "GET",
-          });
-
-          await saveNote(latestResponse.data, { syncStatus: "synced", isLocalOnly: false });
         }
 
         if (item.action === "delete") {

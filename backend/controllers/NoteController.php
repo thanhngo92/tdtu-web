@@ -23,7 +23,7 @@ class NoteController extends Controller
             $notes = $this->noteService->getAllNotes($userId);
             return $this->success($response, $notes);
         } catch (Throwable $e) {
-            return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -37,7 +37,7 @@ class NoteController extends Controller
             $note = $this->noteService->getNote($id, $userId);
             return $this->success($response, $note);
         } catch (Throwable $e) {
-            return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -51,7 +51,7 @@ class NoteController extends Controller
             $note = $this->noteService->createNote($userId, $data);
             return $this->success($response, $note, 201);
         } catch (Throwable $e) {
-            return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -66,7 +66,7 @@ class NoteController extends Controller
             $note = $this->noteService->updateNote($id, $userId, $data);
             return $this->success($response, $note);
         } catch (Throwable $e) {
-            return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -82,7 +82,7 @@ class NoteController extends Controller
             $this->noteService->deleteNote($id, $userId, $password);
             return $this->success($response, ['message' => 'Note deleted']);
         } catch (Throwable $e) {
-            return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -96,7 +96,7 @@ class NoteController extends Controller
             $result = $this->noteService->togglePin($id, $userId);
             return $this->success($response, $result);
         } catch (Throwable $e) {
-            return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -111,7 +111,7 @@ class NoteController extends Controller
             $result = $this->noteService->setLock($id, $userId, $body);
             return $this->success($response, $result);
         } catch (Throwable $e) {
-            return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -127,7 +127,7 @@ class NoteController extends Controller
             $note = $this->noteService->verifyPassword($id, $userId, $password);
             return $this->success($response, $note);
         } catch (Throwable $e) {
-            return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -140,7 +140,7 @@ class NoteController extends Controller
             $sharedNotes = $this->noteService->getSharedNotes($userId);
             return $this->success($response, $sharedNotes);
         } catch (Throwable $e) {
-            return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -157,7 +157,7 @@ class NoteController extends Controller
             $this->noteService->shareNote($id, $userId, $email, $role);
             return $this->success($response, ['message' => 'Note shared successfully']);
         } catch (Throwable $e) {
-            return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
+            return $this->handleException($response, $e);
         }
     }
 
@@ -173,7 +173,7 @@ class NoteController extends Controller
             $this->noteService->revokeShare($id, $userId, $email);
             return $this->success($response, ['message' => 'Share revoked']);
         } catch (Throwable $e) {
-            return $this->error($response, $e->getMessage(), $e->getCode() ?: 500);
+            return $this->handleException($response, $e);
         }
     }
 }
