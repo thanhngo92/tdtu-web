@@ -1,9 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import useAuth from "../hooks/useAuth";
 import useNotes from "../hooks/useNotes";
 import noteService from "../services/noteService";
 import { syncPendingChanges } from "../services/syncService";
-
 import NoteCard from "../components/NoteCard";
 import NoteEditor from "../components/NoteEditor";
 import LabelManager from "../components/LabelManager";
