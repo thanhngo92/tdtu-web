@@ -104,20 +104,36 @@ class AuthService
             }
 
             $user = $this->userModel->getById($userId);
-            
-            // Commit the transaction - the user is created even if mail fails
             $db->commit();
 
-            // Auto-login after registration as per Rubrik requirement
+            // Auto-login after registration
             session_regenerate_id(true);
             $_SESSION['user_id'] = $userId;
             
-            return [
-                'message' => 'Registration successful. Please check your email for activation link.',
-                'user' => $this->sanitizeUser($user),
-                'debugLink' => $activationLink,
-                'mailError' => $activationLink === null // Tell frontend if mail failed
+            $response = [
+                'message' => 'Registration successful. Account will be activated soon.',
+                'user' => $this->sanitizeUser($user)
             ];
+
+            // This is the magic for High Performance: 
+            // 1. Return the JSON to the user NOW
+            header('Content-Type: application/json');
+            echo json_encode($response);
+            
+            // 2. If possible, close the connection to the browser
+            if (function_exists('fastcgi_finish_request')) {
+                fastcgi_finish_request();
+            }
+
+            // 3. Now send the email in the background without making the user wait
+            try {
+                $this->mailService->sendActivationEmail($email, $displayName, $token);
+            } catch (Throwable $mailError) {
+                error_log("Background mail error: " . $mailError->getMessage());
+            }
+            
+            // Since we already echoed and finished, we exit or return something empty
+            exit;
         } catch (Throwable $e) {
             // Rollback the transaction if email fails or any other error occurs
             if ($db->inTransaction()) {
@@ -170,10 +186,26 @@ class AuthService
 
         $this->userModel->saveResetToken($email, $token, $otp, $expires);
 
-        $this->mailService->sendResetPasswordEmail($email, $token, $otp);
-        return [
+        $response = [
             'message' => 'Reset instructions have been sent to your email.'
         ];
+
+        // High Performance: Return response NOW
+        header('Content-Type: application/json');
+        echo json_encode($response);
+        
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
+
+        // Send email in background
+        try {
+            $this->mailService->sendResetPasswordEmail($email, $token, $otp);
+        } catch (Throwable $mailError) {
+            error_log("Background forgot-password mail error: " . $mailError->getMessage());
+        }
+
+        exit;
     }
 
     public function resetPassword($token, $password, $confirmPassword)
