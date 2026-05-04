@@ -32,10 +32,16 @@ class MailService
             // Attempt 1: Using the configured port
             $success = $this->attemptSmtpSend($to, $subject, $body, $this->config['mail']['smtp']['port'], $this->config['mail']['smtp']['encryption']);
             
-            // Attempt 2: Fallback to Port 587/TLS if the primary (usually 465) fails
+            // Attempt 2: Fallback to Port 587/TLS if the primary fails
             if (!$success && $this->config['mail']['smtp']['port'] != '587') {
                 file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] Primary SMTP failed. Attempting fallback to Port 587/TLS...\n", FILE_APPEND);
                 $success = $this->attemptSmtpSend($to, $subject, $body, '587', 'tls');
+            }
+
+            // Attempt 3: Ultimate Fallback to Resend API (HTTPS)
+            if (!$success && !empty($this->config['mail']['resend_api_key'])) {
+                file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] Both SMTP ports failed. Attempting Resend API fallback...\n", FILE_APPEND);
+                $success = $this->attemptResendSend($to, $subject, $body);
             }
 
             return $success;
@@ -148,6 +154,45 @@ class MailService
                 </div>
             </div>";
         return $this->send($recipientEmail, $subject, $body);
+    }
+
+    /**
+     * Ultimate fallback using Resend API (HTTPS based, won't be blocked)
+     */
+    private function attemptResendSend($to, $subject, $body)
+    {
+        $apiKey = $this->config['mail']['resend_api_key'];
+        $from = "NoteMate <onboarding@resend.dev>"; // Required for unverified Resend accounts
+        
+        $payload = [
+            'from' => $from,
+            'to' => [$to],
+            'subject' => $subject,
+            'html' => $body
+        ];
+
+        $ch = curl_init('https://api.resend.com/emails');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json'
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode >= 200 && $httpCode < 300) {
+            file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] Resend API Success: $response\n", FILE_APPEND);
+            error_log("[RESEND SUCCESS] Email sent via API");
+            return true;
+        } else {
+            file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] Resend API Error ($httpCode): $response\n", FILE_APPEND);
+            error_log("[RESEND ERROR] HTTP $httpCode: $response");
+            return false;
+        }
     }
 
     private function resolveLogFile(string $logFile): string

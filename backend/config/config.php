@@ -48,6 +48,7 @@ return [
         'mode' => getenv('MAIL_MODE') ?: 'log',
         'from' => getenv('MAIL_FROM') ?: 'noreply@notemate.local',
         'from_name' => getenv('MAIL_FROM_NAME') ?: 'NoteMate',
+        'resend_api_key' => getenv('RESEND_API_KEY'),
         'log_file' => getenv('MAIL_LOG_FILE') ?: 'emails.log',
         'smtp' => [
             'host' => getenv('SMTP_HOST') ?: 'smtp.mailtrap.io',

@@ -53,6 +53,9 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
   const saveTimeoutRef = useRef(null);
   const lastSavedNoteRef = useRef(note ?? null);
   const socketRef = useRef(null);
+  const hasLocalChangesRef = useRef(() => false);
+  const isSavingRef = useRef(isSaving);
+  const onCloseRef = useRef(onClose);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -104,7 +107,16 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
   }, [content, images, labelIds, title]);
 
   useEffect(() => {
-    if (!note || note.permission !== "edit" || note.isLocked || !isOnline) {
+    hasLocalChangesRef.current = hasLocalChanges;
+    isSavingRef.current = isSaving;
+    onCloseRef.current = onClose;
+  }, [hasLocalChanges, isSaving, onClose]);
+
+  useEffect(() => {
+    const noteId = note?.id;
+    const canCollaborate = note?.permission === "edit" && !note?.isLocked;
+
+    if (!noteId || !canCollaborate || !isOnline) {
       if (socketRef.current) {
         socketRef.current.close();
         socketRef.current = null;
@@ -117,21 +129,21 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
 
     socket.onopen = () => {
       console.log("WebSocket Connected");
-      socket.send(JSON.stringify({ action: "join", noteId: note.id }));
+      socket.send(JSON.stringify({ action: "join", noteId }));
     };
 
     socket.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.action === "note-deleted" && data.noteId === note.id) {
+        if (data.action === "note-deleted" && data.noteId === noteId) {
           alert("This note has been deleted by another user.");
-          onClose();
+          onCloseRef.current();
           return;
         }
 
-        if (data.action === "note-updated" && data.noteId === note.id) {
-          if (!hasLocalChanges() && !isSaving) {
-            const response = await noteService.getNote(note.id);
+        if (data.action === "note-updated" && data.noteId === noteId) {
+          if (!hasLocalChangesRef.current() && !isSavingRef.current) {
+            const response = await noteService.getNote(noteId);
             const updatedNote = response?.data;
 
             if (!updatedNote) {
@@ -162,7 +174,7 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
         socket.close();
       }
     };
-  }, [note?.id, isOnline]);
+  }, [note?.id, note?.isLocked, note?.permission, isOnline]);
 
   useEffect(() => {
     const saved = lastSavedNoteRef.current;
