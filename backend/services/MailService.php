@@ -33,16 +33,29 @@ class MailService
             try {
                 // Server settings
                 $mail->isSMTP();
-                $mail->Host       = $this->config['mail']['smtp']['host'];
                 $mail->SMTPAuth   = true;
                 $mail->Username   = $this->config['mail']['smtp']['username'];
                 $mail->Password   = $this->config['mail']['smtp']['password'];
-                $encryption = strtolower($this->config['mail']['smtp']['encryption']);
-                $mail->SMTPSecure = ($encryption === 'ssl') ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port       = $this->config['mail']['smtp']['port'];
-                $mail->Timeout    = 20; // Increased timeout for slow cloud connections
                 
-                // Add SSL options to bypass potential cloud blocking/verification issues
+                $host = $this->config['mail']['smtp']['host'];
+                $encryption = strtolower($this->config['mail']['smtp']['encryption']);
+                
+                if ($encryption === 'ssl') {
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                    // For Port 465, many cloud environments require the ssl:// prefix
+                    if (!str_starts_with($host, 'ssl://')) {
+                        $host = 'ssl://' . $host;
+                    }
+                } else {
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                }
+
+                $mail->Host       = $host;
+                $mail->Port       = $this->config['mail']['smtp']['port'];
+                $mail->Timeout    = 30;
+                $mail->SMTPKeepAlive = true;
+                
+                // Aggressive SSL options for cloud compatibility
                 $mail->SMTPOptions = [
                     'ssl' => [
                         'verify_peer' => false,
