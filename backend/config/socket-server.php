@@ -1,11 +1,10 @@
 <?php
+require_once __DIR__ . '/../vendor/autoload.php';
 
 use Ratchet\Server\IoServer;
 use Ratchet\Http\HttpServer;
 use Ratchet\WebSocket\WsServer;
 use App\Services\NoteSocket;
-
-require dirname(__DIR__) . '/vendor/autoload.php';
 
 $port = 8080;
 
