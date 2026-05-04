@@ -71,8 +71,9 @@ class MailService
                 return true;
             } catch (Throwable $e) {
                 $errorMsg = ($e instanceof PHPMailerException) ? $mail->ErrorInfo : $e->getMessage();
-                error_log("CRITICAL MAIL ERROR: " . $errorMsg);
-                // Return false instead of throwing to prevent crashing the caller
+                $timestamp = date('Y-m-d H:i:s');
+                $content = "[$timestamp] SMTP ERROR: $errorMsg\n" . str_repeat("-", 50) . "\n\n";
+                file_put_contents($this->logFile, $content, FILE_APPEND);
                 return false;
             }
         }
