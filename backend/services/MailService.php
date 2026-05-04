@@ -98,8 +98,6 @@ class MailService
             return false;
         }
     }
-        return true;
-    }
 
     public function sendActivationEmail($email, $displayName, $token)
     {
