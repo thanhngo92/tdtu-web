@@ -169,6 +169,11 @@ export default function Dashboard() {
   };
 
   const handleDeleteNote = async (note) => {
+    // Rubrik ID 13: A confirmation dialog must always be displayed
+    if (!window.confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
+      return;
+    }
+
     try {
       let password = null;
 

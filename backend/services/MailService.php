@@ -117,6 +117,29 @@ class MailService
         return $link;
     }
 
+    public function sendShareNotificationEmail($recipientEmail, $senderName, $noteTitle, $role)
+    {
+        $roleLabel = ($role === 'edit') ? 'Editor' : 'Viewer';
+        $subject = "A Note has been shared with you: $noteTitle";
+        
+        $body = "
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;'>
+                <h2 style='color: #2d3748;'>New Shared Note</h2>
+                <p>Hello,</p>
+                <p><strong>$senderName</strong> has shared a note with you: <strong>$noteTitle</strong>.</p>
+                <p>You have been given <strong>$roleLabel</strong> permissions.</p>
+                <div style='text-align: center; margin: 30px 0;'>
+                    <a href='{$this->config['app']['frontend_url']}' style='background-color: #38a169; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;'>View Shared Notes</a>
+                </div>
+                <hr style='border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;'>
+                <p style='font-size: 0.8em; color: #a0aec0;'>Log in to your NoteMate account to access the shared content.</p>
+            </div>
+        ";
+        
+        $this->send($recipientEmail, $subject, $body);
+        return true;
+    }
+
     private function resolveLogFile(string $logFile): string
     {
         if (preg_match('/^[A-Za-z]:\\\\|^\//', $logFile) === 1) {

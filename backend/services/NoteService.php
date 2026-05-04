@@ -5,6 +5,7 @@ require_once __DIR__ . '/../models/NoteImage.php';
 require_once __DIR__ . '/../models/NoteLabel.php';
 require_once __DIR__ . '/../models/NoteShare.php';
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../services/MailService.php';
 
 class NoteService
 {
@@ -15,6 +16,7 @@ class NoteService
     private NoteLabel $noteLabelModel;
     private NoteShare $noteShareModel;
     private User $userModel;
+    private MailService $mailService;
 
     public function __construct(PDO $db)
     {
@@ -23,6 +25,7 @@ class NoteService
         $this->noteLabelModel = new NoteLabel($db);
         $this->noteShareModel = new NoteShare($db);
         $this->userModel = new User($db);
+        $this->mailService = new MailService();
     }
 
     public function getAllNotes($userId)
@@ -273,6 +276,20 @@ class NoteService
 
         if (!$this->noteShareModel->create($id, $userId, $recipient['id'], $role)) {
             throw new Exception('Failed to share note', 500);
+        }
+
+        // Send email notification to recipient (Better Approach for Rubrik ID 23)
+        try {
+            $sender = $this->userModel->getById($userId);
+            $this->mailService->sendShareNotificationEmail(
+                $email,
+                $sender['display_name'] ?? $sender['email'],
+                $note['title'] ?: 'Untitled Note',
+                $role
+            );
+        } catch (Exception $e) {
+            // We don't want to fail the whole sharing process if mail fails
+            error_log("Failed to send share notification email: " . $e->getMessage());
         }
 
         return true;

@@ -31,7 +31,7 @@ class User
             reset_token VARCHAR(255),
             reset_otp VARCHAR(10),
             reset_expires DATETIME,
-            avatar_url VARCHAR(500),
+            avatar_url LONGTEXT,
             theme ENUM('light', 'dark') DEFAULT 'light',
             font_size INT DEFAULT 14,
             note_color VARCHAR(50) DEFAULT 'default',

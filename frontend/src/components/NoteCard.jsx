@@ -5,21 +5,9 @@ import { useState } from "react";
  * Displays a summary of a note including title, content preview, pinned status, and labels.
  */
 export default function NoteCard({ note, onClick, onPin, onDelete, availableLabels = [] }) {
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-
   const handleDelete = (e) => {
     e.stopPropagation();
-    setShowConfirmDelete(true);
-  };
-
-  const confirmDelete = (e) => {
-    e.stopPropagation();
     onDelete(note);
-  };
-
-  const cancelDelete = (e) => {
-    e.stopPropagation();
-    setShowConfirmDelete(false);
   };
 
   const handlePin = (e) => {
@@ -95,16 +83,9 @@ export default function NoteCard({ note, onClick, onPin, onDelete, availableLabe
 
         {isOwner && (
           <div className="position-absolute" style={{ bottom: "0.75rem", right: "0.75rem", zIndex: 10 }}>
-            {showConfirmDelete ? (
-              <div className="btn-group btn-group-sm m-0 p-0" role="group">
-                <button className="btn btn-danger py-0 px-2" onClick={confirmDelete} style={{ fontSize: "0.75rem" }}>Delete</button>
-                <button className="btn btn-secondary py-0 px-2" onClick={cancelDelete} style={{ fontSize: "0.75rem" }}>Cancel</button>
-              </div>
-            ) : (
-              <button className="note-action-btn" onClick={handleDelete} title="Delete">
-                {"🗑️"}
-              </button>
-            )}
+            <button className="note-action-btn" onClick={handleDelete} title="Delete">
+              {"\uD83D\uDDD1\uFE0F"}
+            </button>
           </div>
         )}
       </div>
