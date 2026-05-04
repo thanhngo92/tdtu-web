@@ -113,19 +113,16 @@ class AuthService
             $user = $this->userModel->getById($userId);
             $db->commit();
 
-            // Auto-login after registration
+            // Auto-login after registration (Prioritize session over email)
             session_regenerate_id(true);
             $_SESSION['user_id'] = $userId;
+            session_write_close(); // Force save session now
             
-            // Send email - we'll try to keep this fast
-            try {
-                $this->mailService->sendActivationEmail($email, $displayName, $token);
-            } catch (Throwable $mailError) {
-                error_log("Mail error during registration: " . $mailError->getMessage());
-            }
+            // Send email - this will no longer crash the process
+            $this->mailService->sendActivationEmail($email, $displayName, $token);
 
             return [
-                'message' => 'Registration successful. Please check your email for activation link.',
+                'message' => 'Registration successful.',
                 'user' => $this->sanitizeUser($user)
             ];
         } catch (Throwable $e) {

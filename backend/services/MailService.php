@@ -69,9 +69,11 @@ class MailService
 
                 $mail->send();
                 return true;
-            } catch (PHPMailerException $e) {
-                error_log("Mail sending failed: {$mail->ErrorInfo}");
-                throw new Exception("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+            } catch (Throwable $e) {
+                $errorMsg = ($e instanceof PHPMailerException) ? $mail->ErrorInfo : $e->getMessage();
+                error_log("CRITICAL MAIL ERROR: " . $errorMsg);
+                // Return false instead of throwing to prevent crashing the caller
+                return false;
             }
         }
 
