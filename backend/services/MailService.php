@@ -38,9 +38,15 @@ class MailService
                 $success = $this->attemptSmtpSend($to, $subject, $body, '587', 'tls');
             }
 
-            // Attempt 3: Ultimate Fallback to Resend API (HTTPS)
+            // Attempt 3: Fallback to SendGrid API (HTTPS - Works for any recipient)
+            if (!$success && !empty($this->config['mail']['sendgrid_api_key'])) {
+                file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] SMTP failed. Attempting SendGrid API fallback...\n", FILE_APPEND);
+                $success = $this->attemptSendGridSend($to, $subject, $body);
+            }
+
+            // Attempt 4: Last resort Fallback to Resend API (HTTPS - Limited to own email)
             if (!$success && !empty($this->config['mail']['resend_api_key'])) {
-                file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] Both SMTP ports failed. Attempting Resend API fallback...\n", FILE_APPEND);
+                file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] SendGrid failed. Attempting Resend API fallback...\n", FILE_APPEND);
                 $success = $this->attemptResendSend($to, $subject, $body);
             }
 
