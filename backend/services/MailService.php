@@ -39,6 +39,7 @@ class MailService
                 $mail->Password   = $this->config['mail']['smtp']['password'];
                 $mail->SMTPSecure = $this->config['mail']['smtp']['encryption'];
                 $mail->Port       = $this->config['mail']['smtp']['port'];
+                $mail->Timeout    = 15; // Limit waiting time to 15 seconds
 
                 // Recipients
                 $mail->setFrom($this->config['mail']['from'], $this->config['mail']['from_name']);
