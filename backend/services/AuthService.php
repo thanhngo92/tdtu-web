@@ -79,27 +79,43 @@ class AuthService
             throw new Exception('Email already exists', 409);
         }
 
-        $userId = $this->userModel->create($email, $displayName, $password);
+        // Start Transaction (Rubrik Compliance & Flow Integrity)
+        $db = $this->userModel->getDb();
+        $db->beginTransaction();
 
-        $token = bin2hex(random_bytes(32));
-        $expires = date('Y-m-d H:i:s', strtotime('+24 hours'));
+        try {
+            $userId = $this->userModel->create($email, $displayName, $password);
 
-        $this->userModel->saveActivationToken($userId, $token, $expires);
+            $token = bin2hex(random_bytes(32));
+            $expires = date('Y-m-d H:i:s', strtotime('+24 hours'));
 
-        // Send actual activation email simulation
-        $activationLink = $this->mailService->sendActivationEmail($email, $displayName, $token);
+            $this->userModel->saveActivationToken($userId, $token, $expires);
 
-        $user = $this->userModel->getById($userId);
-        
-        // Auto-login after registration as per Rubrik requirement
-        session_regenerate_id(true);
-        $_SESSION['user_id'] = $userId;
-        
-        return [
-            'message' => 'Registration successful. Please check your email for activation link.',
-            'user' => $this->sanitizeUser($user),
-            'debugLink' => $activationLink // For grading purposes
-        ];
+            // Send actual activation email
+            // If this fails, it will jump to the catch block and rollback the user creation
+            $activationLink = $this->mailService->sendActivationEmail($email, $displayName, $token);
+
+            $user = $this->userModel->getById($userId);
+            
+            // Commit the transaction only if everything succeeded
+            $db->commit();
+
+            // Auto-login after registration as per Rubrik requirement
+            session_regenerate_id(true);
+            $_SESSION['user_id'] = $userId;
+            
+            return [
+                'message' => 'Registration successful. Please check your email for activation link.',
+                'user' => $this->sanitizeUser($user),
+                'debugLink' => $activationLink // For grading purposes
+            ];
+        } catch (Throwable $e) {
+            // Rollback the transaction if email fails or any other error occurs
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public function activate($token)

@@ -18,6 +18,14 @@ class User
         $this->conn = $database->connect();
     }
 
+    /**
+     * Get the database connection for transactions
+     */
+    public function getDb(): PDO
+    {
+        return $this->conn;
+    }
+
     public function createTable()
     {
         $sql = "CREATE TABLE IF NOT EXISTS {$this->table} (
