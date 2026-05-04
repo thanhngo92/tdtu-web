@@ -52,6 +52,8 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
   const saveTimeoutRef = useRef(null);
   const syncTimeoutRef = useRef(null);
   const lastSavedNoteRef = useRef(note ?? null);
+  const socketRef = useRef(null);
+  const SOCKET_URL = `ws://${window.location.hostname}:8080`;
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -103,6 +105,59 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
   }, [content, images, labelIds, title]);
 
   useEffect(() => {
+    if (!note || note.permission !== "edit" || note.isLocked || !isOnline) {
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
+      return;
+    }
+
+    const socket = new WebSocket(SOCKET_URL);
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      console.log("WebSocket Connected");
+      socket.send(JSON.stringify({ action: "join", noteId: note.id }));
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.action === "note-updated" && data.noteId === note.id) {
+          // Check if we have unsaved changes before overriding
+          if (!hasLocalChanges() && !isSaving) {
+            setTitle(data.title);
+            setContent(data.content);
+            setCollaborationMessage("Note updated by collaborator.");
+            
+            // Update last saved ref to prevent feedback loop
+            lastSavedNoteRef.current = {
+                ...lastSavedNoteRef.current,
+                title: data.title,
+                content: data.content
+            };
+          } else {
+            setCollaborationMessage("Collaborator made changes. Finish your edits to sync.");
+          }
+        }
+      } catch (err) {
+        console.error("WebSocket message error", err);
+      }
+    };
+
+    socket.onclose = () => {
+      console.log("WebSocket Disconnected");
+    };
+
+    return () => {
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        socket.close();
+      }
+    };
+  }, [note?.id, isOnline]);
+
+  useEffect(() => {
     const saved = lastSavedNoteRef.current;
 
     if (
@@ -139,6 +194,16 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
           if (savedNote) {
             lastSavedNoteRef.current = savedNote;
             onSaveComplete?.(savedNote);
+
+            // Notify other collaborators via WebSocket
+            if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                socketRef.current.send(JSON.stringify({
+                    action: 'note-updated',
+                    noteId: note.id,
+                    title: title,
+                    content: content
+                }));
+            }
           }
         } else {
           res = await noteService.createNote(payload);
@@ -160,54 +225,6 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
 
     return () => clearTimeout(saveTimeoutRef.current);
   }, [title, content, images, labelIds, note, onSaveComplete]);
-
-  useEffect(() => {
-    if (!note || note.permission !== "edit" || note.isLocked) {
-      if (note?.permission === "edit" && note?.isLocked) {
-        setCollaborationMessage("Reopen note to refresh locked shared content.");
-      }
-      return;
-    }
-
-    let isCancelled = false;
-
-    const pollLatest = async () => {
-      try {
-        const res = await noteService.getNote(note.id);
-        const remoteNote = res?.data ?? null;
-        const saved = lastSavedNoteRef.current;
-
-        if (!remoteNote || !saved || remoteNote.updatedAt === saved.updatedAt) {
-          return;
-        }
-
-        if (!hasLocalChanges() && !isSaving) {
-          setTitle(remoteNote.title);
-          setContent(remoteNote.content);
-          setImages(remoteNote.images);
-          setLabelIds(remoteNote.labelIds);
-          lastSavedNoteRef.current = remoteNote;
-          onSaveComplete?.(remoteNote);
-          setCollaborationMessage("Note content refreshed.");
-        } else {
-          setCollaborationMessage("Newer changes available. Reopen to sync.");
-        }
-      } catch {
-        setCollaborationMessage("Connection lost. Unable to sync.");
-      } finally {
-        if (!isCancelled) {
-          syncTimeoutRef.current = setTimeout(pollLatest, 3000);
-        }
-      }
-    };
-
-    syncTimeoutRef.current = setTimeout(pollLatest, 3000);
-
-    return () => {
-      isCancelled = true;
-      clearTimeout(syncTimeoutRef.current);
-    };
-  }, [note, isSaving, onSaveComplete, hasLocalChanges]);
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);

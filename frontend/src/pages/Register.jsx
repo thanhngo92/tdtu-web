@@ -109,37 +109,8 @@ export default function Register() {
                 We've sent a verification link to<br />
                 <strong>{successData.email}</strong>
               </p>
-
-              {errorMessage && (
-                <div className="alert alert-danger py-2 small" role="alert">
-                  {errorMessage}
-                </div>
-              )}
-
-              <div className="d-grid gap-2 mb-3">
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => {
-                    const link = successData.debugLink;
-                    if (!link) {
-                      setErrorMessage("Activation link is not available. Please register again.");
-                      return;
-                    }
-                    try {
-                      if (link.startsWith("http")) {
-                        const url = new URL(link);
-                        navigate(url.pathname + url.search);
-                      } else {
-                        navigate(link);
-                      }
-                    } catch {
-                      navigate(link);
-                    }
-                  }}
-                >
-                  Verify Account
-                </button>
+              <div className="alert alert-info py-2 small" role="alert">
+                Please click the link in the email we just sent you to activate your account.
               </div>
 
               <div className="auth-switch text-center">
