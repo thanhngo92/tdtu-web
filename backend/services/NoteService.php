@@ -289,6 +289,10 @@ class NoteService
             throw new Exception('Note not found', 404);
         }
 
+        if ((int)$note['user_id'] !== (int)$userId) {
+            throw new Exception('Only the owner can manage note sharing', 403);
+        }
+
         $this->ensureVerifiedAccessForLockedNote($note, 'share this locked note');
 
         if (empty($email)) {
@@ -330,6 +334,10 @@ class NoteService
         $note = $this->noteModel->getById($id, $userId);
         if (!$note) {
             throw new Exception('Note not found', 404);
+        }
+
+        if ((int)$note['user_id'] !== (int)$userId) {
+            throw new Exception('Only the owner can manage note sharing', 403);
         }
 
         $this->ensureVerifiedAccessForLockedNote($note, 'change sharing for this locked note');

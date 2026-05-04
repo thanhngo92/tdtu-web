@@ -29,49 +29,75 @@ class MailService
         }
 
         if ($mode === 'smtp') {
-            $mail = new PHPMailer(true);
-            try {
-                $mail->isSMTP();
-                $mail->SMTPAuth   = true;
-                $mail->Username   = $this->config['mail']['smtp']['username'];
-                $mail->Password   = $this->config['mail']['smtp']['password'];
-                
-                $host = $this->config['mail']['smtp']['host'];
-                $encryption = strtolower($this->config['mail']['smtp']['encryption']);
-                
-                if ($encryption === 'ssl') {
-                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-                    if (!str_starts_with($host, 'ssl://')) { $host = 'ssl://' . $host; }
-                } else {
-                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                }
-
-                $mail->Host       = $host;
-                $mail->Port       = $this->config['mail']['smtp']['port'];
-                $mail->Timeout    = 60;
-                $mail->SMTPKeepAlive = true;
-                $mail->SMTPDebug  = 2; 
-                $mail->Debugoutput = function($str, $level) {
-                    file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] SMTP DEBUG: $str\n", FILE_APPEND);
-                };
-                $mail->SMTPOptions = [
-                    'ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true]
-                ];
-
-                $mail->setFrom($this->config['mail']['from'], $this->config['mail']['from_name']);
-                $mail->addAddress($to);
-                $mail->isHTML(true);
-                $mail->Subject = $subject;
-                $mail->Body = !str_contains($body, '<') ? nl2br(htmlspecialchars($body)) : $body;
-
-                $mail->send();
-                return true;
-            } catch (Throwable $e) {
-                $errorMsg = ($e instanceof PHPMailerException) ? $mail->ErrorInfo : $e->getMessage();
-                file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] SMTP ERROR: $errorMsg\n---\n", FILE_APPEND);
-                return false;
+            // Attempt 1: Using the configured port
+            $success = $this->attemptSmtpSend($to, $subject, $body, $this->config['mail']['smtp']['port'], $this->config['mail']['smtp']['encryption']);
+            
+            // Attempt 2: Fallback to Port 587/TLS if the primary (usually 465) fails
+            if (!$success && $this->config['mail']['smtp']['port'] != '587') {
+                file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] Primary SMTP failed. Attempting fallback to Port 587/TLS...\n", FILE_APPEND);
+                $success = $this->attemptSmtpSend($to, $subject, $body, '587', 'tls');
             }
+
+            return $success;
         }
+        return true;
+    }
+
+    /**
+     * Helper method to attempt SMTP sending with specific parameters
+     */
+    private function attemptSmtpSend($to, $subject, $body, $port, $encryption)
+    {
+        $mail = new PHPMailer(true);
+        try {
+            $mail->isSMTP();
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $this->config['mail']['smtp']['username'];
+            $mail->Password   = $this->config['mail']['smtp']['password'];
+            
+            $host = $this->config['mail']['smtp']['host'];
+            $encryption = strtolower($encryption);
+            
+            if ($encryption === 'ssl' || $port == '465') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                if (!str_starts_with($host, 'ssl://')) { $host = 'ssl://' . $host; }
+            } else {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            }
+
+            $mail->Host       = $host;
+            $mail->Port       = $port;
+            $mail->Timeout    = 10; // Set a lower timeout for faster fallback
+            $mail->SMTPKeepAlive = true;
+            
+            // Advanced Debugging (Logs directly to Railway)
+            $mail->SMTPDebug  = 2; 
+            $mail->Debugoutput = function($str, $level) {
+                file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] SMTP DEBUG: $str\n", FILE_APPEND);
+            };
+
+            $mail->SMTPOptions = [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true
+                ]
+            ];
+
+            $mail->setFrom($this->config['mail']['from'], $this->config['mail']['from_name']);
+            $mail->addAddress($to);
+            $mail->isHTML(true);
+            $mail->Subject = $subject;
+            $mail->Body = !str_contains($body, '<') ? nl2br(htmlspecialchars($body)) : $body;
+
+            $mail->send();
+            return true;
+        } catch (Throwable $e) {
+            $errorMsg = ($e instanceof PHPMailerException) ? $mail->ErrorInfo : $e->getMessage();
+            file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] SMTP ERROR (Port $port): $errorMsg\n", FILE_APPEND);
+            return false;
+        }
+    }
         return true;
     }
 
