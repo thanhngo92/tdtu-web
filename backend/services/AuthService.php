@@ -113,13 +113,13 @@ class AuthService
             $_SESSION['user_id'] = $userId;
             
             return [
-                'message' => 'Registration successful.',
+                'message' => 'Registration successful. Please check your email for activation link.',
                 'user' => $this->sanitizeUser($user),
                 'debugLink' => $activationLink,
                 'mailError' => $activationLink === null // Tell frontend if mail failed
             ];
         } catch (Throwable $e) {
-            // Rollback only for CRITICAL database errors, not for mail errors
+            // Rollback the transaction if email fails or any other error occurs
             if ($db->inTransaction()) {
                 $db->rollBack();
             }
@@ -170,12 +170,9 @@ class AuthService
 
         $this->userModel->saveResetToken($email, $token, $otp, $expires);
 
-        // Send actual reset email simulation
-        $debugLink = $this->mailService->sendResetPasswordEmail($email, $token, $otp);
+        $this->mailService->sendResetPasswordEmail($email, $token, $otp);
         return [
-            'message' => 'Reset instructions have been sent to your email.',
-            'debugLink' => $debugLink,
-            'otp' => $otp
+            'message' => 'Reset instructions have been sent to your email.'
         ];
     }
 

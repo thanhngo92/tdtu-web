@@ -23,6 +23,8 @@ export default function Dashboard() {
   const [isSidebarMobileOpen, setIsSidebarMobileOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   const [syncState, setSyncState] = useState({ status: "idle", pendingCount: 0, errorMessage: "" });
+  
+  const socketRef = useRef(null);
 
   useEffect(() => {
     const handleToggle = () => setIsSidebarMobileOpen((prev) => !prev);
@@ -160,7 +162,7 @@ export default function Dashboard() {
           refreshWorkspace();
         }
       } catch (err) {
-        console.error("Dashboard WebSocket error", err);
+        // Silently handle socket message errors in production
       }
     };
     socket.onclose = () => {};
@@ -252,7 +254,6 @@ export default function Dashboard() {
         closeEditor();
       }
     } catch (error) {
-      console.error("Failed to delete note:", error);
       setNotes(previousNotes);
     }
   };
