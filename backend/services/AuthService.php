@@ -91,9 +91,9 @@ class AuthService
 
         $user = $this->userModel->getById($userId);
         
-        // Auto-login after registration as per requirement
+        // Auto-login after registration as per Rubrik requirement
         session_regenerate_id(true);
-        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_id'] = $userId;
         
         return [
             'message' => 'Registration successful. Please check your email for activation link.',
