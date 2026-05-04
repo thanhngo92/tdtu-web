@@ -23,7 +23,7 @@ export default function Dashboard() {
   const [isSidebarMobileOpen, setIsSidebarMobileOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   const [syncState, setSyncState] = useState({ status: "idle", pendingCount: 0, errorMessage: "" });
-  
+
   const socketRef = useRef(null);
 
   useEffect(() => {
@@ -142,9 +142,6 @@ export default function Dashboard() {
     setIsEditorOpen(true);
   };
 
-  const socketRef = useRef(null);
-
-  // Real-time synchronization (Rubrik ID 24)
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.hostname;
@@ -152,7 +149,7 @@ export default function Dashboard() {
     const socket = new WebSocket(`${protocol}//${host}:8080`);
     socketRef.current = socket;
 
-    socket.onopen = () => {};
+    socket.onopen = () => { };
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -165,7 +162,7 @@ export default function Dashboard() {
         // Silently handle socket message errors in production
       }
     };
-    socket.onclose = () => {};
+    socket.onclose = () => { };
 
     return () => {
       if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
