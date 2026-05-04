@@ -110,30 +110,24 @@ class AuthService
             session_regenerate_id(true);
             $_SESSION['user_id'] = $userId;
             
-            $response = [
-                'message' => 'Registration successful. Account will be activated soon.',
-                'user' => $this->sanitizeUser($user)
-            ];
+            $user = $this->userModel->getById($userId);
+            $db->commit();
 
-            // This is the magic for High Performance: 
-            // 1. Return the JSON to the user NOW
-            header('Content-Type: application/json');
-            echo json_encode($response);
+            // Auto-login after registration
+            session_regenerate_id(true);
+            $_SESSION['user_id'] = $userId;
             
-            // 2. If possible, close the connection to the browser
-            if (function_exists('fastcgi_finish_request')) {
-                fastcgi_finish_request();
-            }
-
-            // 3. Now send the email in the background without making the user wait
+            // Send email - we'll try to keep this fast
             try {
                 $this->mailService->sendActivationEmail($email, $displayName, $token);
             } catch (Throwable $mailError) {
-                error_log("Background mail error: " . $mailError->getMessage());
+                error_log("Mail error during registration: " . $mailError->getMessage());
             }
-            
-            // Since we already echoed and finished, we exit or return something empty
-            exit;
+
+            return [
+                'message' => 'Registration successful. Please check your email for activation link.',
+                'user' => $this->sanitizeUser($user)
+            ];
         } catch (Throwable $e) {
             // Rollback the transaction if email fails or any other error occurs
             if ($db->inTransaction()) {
@@ -186,26 +180,15 @@ class AuthService
 
         $this->userModel->saveResetToken($email, $token, $otp, $expires);
 
-        $response = [
-            'message' => 'Reset instructions have been sent to your email.'
-        ];
-
-        // High Performance: Return response NOW
-        header('Content-Type: application/json');
-        echo json_encode($response);
-        
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
-        }
-
-        // Send email in background
         try {
             $this->mailService->sendResetPasswordEmail($email, $token, $otp);
         } catch (Throwable $mailError) {
-            error_log("Background forgot-password mail error: " . $mailError->getMessage());
+            error_log("Forgot-password mail error: " . $mailError->getMessage());
         }
 
-        exit;
+        return [
+            'message' => 'Reset instructions have been sent to your email.'
+        ];
     }
 
     public function resetPassword($token, $password, $confirmPassword)
