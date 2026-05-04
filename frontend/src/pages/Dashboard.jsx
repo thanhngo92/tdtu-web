@@ -150,7 +150,7 @@ export default function Dashboard() {
     const socket = new WebSocket(`${protocol}//${host}:8080`);
     socketRef.current = socket;
 
-    socket.onopen = () => console.log("Dashboard WebSocket Connected");
+    socket.onopen = () => {};
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -163,7 +163,7 @@ export default function Dashboard() {
         console.error("Dashboard WebSocket error", err);
       }
     };
-    socket.onclose = () => console.log("Dashboard WebSocket Disconnected");
+    socket.onclose = () => {};
 
     return () => {
       if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
@@ -213,8 +213,8 @@ export default function Dashboard() {
         socketRef.current.send(JSON.stringify({ action: "note-pinned", noteId: note.id }));
       }
     } catch (error) {
-      console.error("Failed to toggle pin:", error);
       setNotes(previousNotes);
+      alert("Failed to pin note. Please try again.");
     }
   };
 
