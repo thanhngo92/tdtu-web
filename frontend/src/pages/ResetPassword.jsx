@@ -5,10 +5,13 @@ import authService from "../services/authService";
 export default function ResetPassword() {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const urlToken = queryParams.get("token");
   const email = location.state?.email || "";
 
+  const [step, setStep] = useState(urlToken ? 2 : 1);
   const [formData, setFormData] = useState({
-    tokenOrOtp: "",
+    tokenOrOtp: urlToken || "",
     password: "",
     confirmPassword: "",
   });
@@ -22,24 +25,29 @@ export default function ResetPassword() {
   const [isResending, setIsResending] = useState(false);
 
   useEffect(() => {
-    if (!email) {
+    if (!email && !urlToken) {
       navigate("/forgot-password", { replace: true });
     }
-  }, [email, navigate]);
+  }, [email, urlToken, navigate]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (event) => {
+  const handleVerifyOtp = (e) => {
+    e.preventDefault();
+    if (!formData.tokenOrOtp.trim()) {
+      return setErrorMessage("Please enter the verification code.");
+    }
+    setStep(2);
+    setErrorMessage("");
+  };
+
+  const handleSubmitReset = async (event) => {
     event.preventDefault();
     setErrorMessage("");
     setSuccessMessage("");
-
-    if (!formData.tokenOrOtp.trim()) {
-      return setErrorMessage("Verification code is required.");
-    }
 
     if (formData.password.length < 6) {
       return setErrorMessage("Password must be at least 6 characters.");
@@ -72,6 +80,7 @@ export default function ResetPassword() {
 
       setSuccessMessage("Password reset successful! Redirecting to login...");
       setIsResetSuccessful(true);
+      // Rubrik requirement: Required to log in manually after reset
       setTimeout(() => navigate("/login"), 2000);
     } catch (error) {
       setErrorMessage(error?.data?.message || error.message || "Reset failed");
@@ -97,7 +106,7 @@ export default function ResetPassword() {
     }
   };
 
-  if (!email) return null;
+  if (!email && !urlToken) return null;
 
   return (
     <div className="auth-page">
@@ -113,10 +122,10 @@ export default function ResetPassword() {
             <>
               <div className="text-center mb-4">
                 <h1 className="auth-title">Reset Password</h1>
-
                 <p className="auth-subtitle mb-0">
-                  Enter the verification code sent to your email and choose a
-                  new password.
+                  {step === 1
+                    ? "Step 1: Verify your identity"
+                    : "Step 2: Create new password"}
                 </p>
               </div>
 
@@ -132,83 +141,83 @@ export default function ResetPassword() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <label className="form-label mb-0">
-                      Verification Code
-                    </label>
-
-                    <button
-                      type="button"
-                      className="btn btn-link p-0 text-decoration-none small fw-medium"
-                      style={{ fontSize: "0.75rem" }}
-                      disabled={isResending}
-                      onClick={handleResendCode}
-                    >
-                      {isResending ? "Sending..." : "Resend Code"}
-                    </button>
+              {step === 1 ? (
+                <form onSubmit={handleVerifyOtp}>
+                  <div className="mb-4">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <label className="form-label mb-0">Verification Code</label>
+                      <button
+                        type="button"
+                        className="btn btn-link p-0 text-decoration-none small fw-medium"
+                        style={{ fontSize: "0.75rem" }}
+                        disabled={isResending}
+                        onClick={handleResendCode}
+                      >
+                        {isResending ? "Sending..." : "Resend Code"}
+                      </button>
+                    </div>
+                    <input
+                      name="tokenOrOtp"
+                      type="text"
+                      className="form-control form-control-lg text-center"
+                      style={{ letterSpacing: "4px", fontWeight: "bold" }}
+                      value={formData.tokenOrOtp}
+                      onChange={handleChange}
+                      placeholder="------"
+                      autoComplete="one-time-code"
+                      autoFocus
+                    />
                   </div>
-
-                  <input
-                    name="tokenOrOtp"
-                    type="text"
-                    className="form-control"
-                    value={formData.tokenOrOtp}
-                    onChange={handleChange}
-                    placeholder="Enter your code"
-                    autoComplete="one-time-code"
-                  />
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label">New Password</label>
-
-                  <input
-                    name="password"
-                    type="password"
-                    className="form-control"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Enter new password"
-                    autoComplete="new-password"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="form-label">Confirm Password</label>
-
-                  <input
-                    name="confirmPassword"
-                    type="password"
-                    className="form-control"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Confirm new password"
-                    autoComplete="new-password"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn btn-primary w-100 mb-3"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Updating..." : "Update Password"}
-                </button>
-
-                <div className="auth-switch mt-2 text-center">
-                  <span className="text-muted">Entered the wrong email? </span>
-
-                  <button
-                    type="button"
-                    className="btn btn-link text-decoration-none auth-link-btn"
-                    onClick={() => navigate("/forgot-password")}
-                  >
-                    Change Email
+                  <button type="submit" className="btn btn-primary w-100">
+                    Verify Code
                   </button>
-                </div>
-              </form>
+                </form>
+              ) : (
+                <form onSubmit={handleSubmitReset}>
+                  <div className="mb-3">
+                    <label className="form-label">New Password</label>
+                    <input
+                      name="password"
+                      type="password"
+                      className="form-control"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Enter new password"
+                      autoComplete="new-password"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="form-label">Confirm Password</label>
+                    <input
+                      name="confirmPassword"
+                      type="password"
+                      className="form-control"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      placeholder="Confirm new password"
+                      autoComplete="new-password"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn btn-primary w-100 mb-3"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Updating..." : "Update Password"}
+                  </button>
+                </form>
+              )}
+
+              <div className="auth-switch mt-4 text-center">
+                <button
+                  type="button"
+                  className="btn btn-link text-decoration-none auth-link-btn"
+                  onClick={() => navigate("/forgot-password")}
+                >
+                  {"\u2190"} Back to Forgot Password
+                </button>
+              </div>
             </>
           )}
         </div>
