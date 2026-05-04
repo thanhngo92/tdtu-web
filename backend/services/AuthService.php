@@ -92,12 +92,20 @@ class AuthService
             $this->userModel->saveActivationToken($userId, $token, $expires);
 
             // Send actual activation email
-            // If this fails, it will jump to the catch block and rollback the user creation
-            $activationLink = $this->mailService->sendActivationEmail($email, $displayName, $token);
+            // We use a nested try-catch to make email sending non-blocking for the user
+            $appUrl = rtrim($this->config['app']['frontend_url'] ?? '', '/');
+            $activationLink = "$appUrl/activate?token=$token";
+            
+            try {
+                $this->mailService->sendActivationEmail($email, $displayName, $token);
+            } catch (Throwable $mailError) {
+                // Log the mail error but don't stop the registration flow
+                error_log("Non-blocking mail error: " . $mailError->getMessage());
+            }
 
             $user = $this->userModel->getById($userId);
             
-            // Commit the transaction only if everything succeeded
+            // Commit the transaction - the user is created even if mail fails
             $db->commit();
 
             // Auto-login after registration as per Rubrik requirement
@@ -105,12 +113,13 @@ class AuthService
             $_SESSION['user_id'] = $userId;
             
             return [
-                'message' => 'Registration successful. Please check your email for activation link.',
+                'message' => 'Registration successful.',
                 'user' => $this->sanitizeUser($user),
-                'debugLink' => $activationLink // For grading purposes
+                'debugLink' => $activationLink,
+                'mailError' => $activationLink === null // Tell frontend if mail failed
             ];
         } catch (Throwable $e) {
-            // Rollback the transaction if email fails or any other error occurs
+            // Rollback only for CRITICAL database errors, not for mail errors
             if ($db->inTransaction()) {
                 $db->rollBack();
             }

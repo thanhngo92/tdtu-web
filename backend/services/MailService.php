@@ -40,6 +40,15 @@ class MailService
                 $mail->SMTPSecure = $this->config['mail']['smtp']['encryption'];
                 $mail->Port       = $this->config['mail']['smtp']['port'];
                 $mail->Timeout    = 15; // Limit waiting time to 15 seconds
+                
+                // Add SSL options to bypass potential cloud blocking/verification issues
+                $mail->SMTPOptions = [
+                    'ssl' => [
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                        'allow_self_signed' => true
+                    ]
+                ];
 
                 // Recipients
                 $mail->setFrom($this->config['mail']['from'], $this->config['mail']['from_name']);
