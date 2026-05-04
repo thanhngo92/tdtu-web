@@ -142,10 +142,21 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    // Real-time synchronization (Rubrik ID 24)
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+    let wsHost = window.location.hostname;
+    
+    if (apiBaseUrl.startsWith("http")) {
+      try {
+        wsHost = new URL(apiBaseUrl).hostname;
+      } catch (e) {
+        // Fallback to current hostname
+      }
+    }
+
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.hostname;
     // NoteMate uses port 8080 for WebSocket
-    const socket = new WebSocket(`${protocol}//${host}:8080`);
+    const socket = new WebSocket(`${protocol}//${wsHost}:8080`);
     socketRef.current = socket;
 
     socket.onopen = () => { };

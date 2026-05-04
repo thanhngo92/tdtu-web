@@ -32,9 +32,10 @@ class UserController extends Controller
     public function updateProfile($request, $response)
     {
         try {
+            $user = $this->authService->getCurrentUser();
+            $userId = $user['id'];
+            
             $body = $request->getBody();
-
-            $userId = $_SESSION['user_id'];
             $displayName = trim($body['displayName'] ?? '');
             $avatarUrl = $body['avatarUrl'] ?? null;
 
@@ -54,9 +55,10 @@ class UserController extends Controller
     public function changePassword($request, $response)
     {
         try {
+            $user = $this->authService->getCurrentUser();
+            $userId = $user['id'];
+            
             $body = $request->getBody();
-
-            $userId = $_SESSION['user_id'];
             $currentPassword = $body['currentPassword'] ?? '';
             $newPassword = $body['newPassword'] ?? '';
             $confirmPassword = $body['confirmPassword'] ?? '';
@@ -74,9 +76,10 @@ class UserController extends Controller
     public function updatePreferences($request, $response)
     {
         try {
+            $user = $this->authService->getCurrentUser();
+            $userId = $user['id'];
+            
             $body = $request->getBody();
-
-            $userId = $_SESSION['user_id'];
             $theme = $body['theme'] ?? 'light';
             $fontSize = $body['fontSize'] ?? 14;
             $noteColor = $body['noteColor'] ?? 'default';
