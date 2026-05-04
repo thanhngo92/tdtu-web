@@ -15,7 +15,6 @@ export default function Register() {
   });
 
   const [errorMessage, setErrorMessage] = useState("");
-  const [successData, setSuccessData] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (event) => {
@@ -64,21 +63,9 @@ export default function Register() {
     setIsSubmitting(true);
 
     try {
-      const response = await authService.register(formData);
-      const activationLink = response?.data?.debugLink || response?.debugLink || "";
-
-      setSuccessData({
-        email: formData.email,
-        debugLink: activationLink,
-      });
-
-      try {
-        await fetchMe();
-      } catch {
-        // The activation link can still be shown even if refreshing auth fails.
-      }
-
-      // Don't navigate yet, let them see the activation link
+      await authService.register(formData);
+      await fetchMe();
+      navigate("/", { replace: true });
     } catch (error) {
       setErrorMessage(error?.data?.message || error.message || "Register failed");
     } finally {
@@ -86,7 +73,7 @@ export default function Register() {
     }
   };
 
-  if (isAuthenticated && !successData) {
+  if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
@@ -94,129 +81,100 @@ export default function Register() {
     <div className="auth-page">
       <div className="card shadow-sm auth-card">
         <div className="card-body auth-card-body">
-          {!successData && (
-            <div className="text-center mb-4">
-              <h1 className="auth-title">Create an account</h1>
-              <p className="auth-subtitle">Sign up to start using your notes app</p>
+          <div className="text-center mb-4">
+            <h1 className="auth-title">Create an account</h1>
+            <p className="auth-subtitle">Sign up to start using your notes app</p>
+          </div>
+          {errorMessage && (
+            <div className="alert alert-danger py-2" role="alert">
+              {errorMessage}
             </div>
           )}
 
-          {successData ? (
-            <div className="text-center py-4">
-              <div className="display-4 text-success mb-3">{"\u2705"}</div>
-              <h1 className="h4 fw-bold">Check your email</h1>
-              <p className="text-muted mb-4">
-                We've sent a verification link to<br />
-                <strong>{successData.email}</strong>
-              </p>
-              <div className="alert alert-info py-2 small" role="alert">
-                Please click the link in the email we just sent you to activate your account.
-              </div>
-
-              <div className="auth-switch text-center">
-                <button
-                  type="button"
-                  className="btn btn-link text-decoration-none auth-link-btn small"
-                  onClick={() => navigate("/")}
-                >
-                  Skip for now
-                </button>
-              </div>
+          <form onSubmit={handleSubmit} noValidate>
+            <div className="mb-3">
+              <label htmlFor="email" className="form-label">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                className="form-control"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
+                autoComplete="email"
+              />
             </div>
-          ) : (
-            <>
-              {errorMessage && (
-                <div className="alert alert-danger py-2" role="alert">
-                  {errorMessage}
-                </div>
-              )}
 
-              <form onSubmit={handleSubmit} noValidate>
-                <div className="mb-3">
-                  <label htmlFor="email" className="form-label">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    className="form-control"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="Enter your email"
-                    autoComplete="email"
-                  />
-                </div>
+            <div className="mb-3">
+              <label htmlFor="displayName" className="form-label">
+                Display name
+              </label>
+              <input
+                id="displayName"
+                name="displayName"
+                type="text"
+                className="form-control"
+                value={formData.displayName}
+                onChange={handleChange}
+                placeholder="Enter your display name"
+                autoComplete="nickname"
+              />
+            </div>
 
-                <div className="mb-3">
-                  <label htmlFor="displayName" className="form-label">
-                    Display name
-                  </label>
-                  <input
-                    id="displayName"
-                    name="displayName"
-                    type="text"
-                    className="form-control"
-                    value={formData.displayName}
-                    onChange={handleChange}
-                    placeholder="Enter your display name"
-                    autoComplete="nickname"
-                  />
-                </div>
+            <div className="mb-3">
+              <label htmlFor="password" className="form-label">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                className="form-control"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                autoComplete="new-password"
+              />
+            </div>
 
-                <div className="mb-3">
-                  <label htmlFor="password" className="form-label">
-                    Password
-                  </label>
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    className="form-control"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Enter your password"
-                    autoComplete="new-password"
-                  />
-                </div>
+            <div className="mb-4">
+              <label htmlFor="confirmPassword" className="form-label">
+                Confirm password
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                className="form-control"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm your password"
+                autoComplete="new-password"
+              />
+            </div>
 
-                <div className="mb-4">
-                  <label htmlFor="confirmPassword" className="form-label">
-                    Confirm password
-                  </label>
-                  <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    className="form-control"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Confirm your password"
-                    autoComplete="new-password"
-                  />
-                </div>
+            <button
+              type="submit"
+              className="btn btn-primary w-100"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Signing Up..." : "Sign Up"}
+            </button>
+          </form>
 
-                <button
-                  type="submit"
-                  className="btn btn-primary w-100"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Signing Up..." : "Sign Up"}
-                </button>
-              </form>
-
-              <div className="auth-switch mt-4">
-                <span className="text-muted">Already have an account? </span>
-                <button
-                  type="button"
-                  className="btn btn-link text-decoration-none auth-link-btn"
-                  onClick={() => navigate("/login")}
-                >
-                  Sign In
-                </button>
-              </div>
-            </>
-          )}
+          <div className="auth-switch mt-4">
+            <span className="text-muted">Already have an account? </span>
+            <button
+              type="button"
+              className="btn btn-link text-decoration-none auth-link-btn"
+              onClick={() => navigate("/login")}
+            >
+              Sign In
+            </button>
+          </div>
         </div>
       </div>
     </div>

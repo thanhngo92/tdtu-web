@@ -27,10 +27,6 @@ class AuthService
             throw new Exception('Invalid email or password', 401);
         }
 
-        if (!$user['is_activated']) {
-            throw new Exception('Account not activated. Please check your email.', 403);
-        }
-
         session_regenerate_id(true);
         $_SESSION['user_id'] = $user['id'];
 
