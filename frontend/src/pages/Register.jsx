@@ -85,6 +85,11 @@ export default function Register() {
             <h1 className="auth-title">Create an account</h1>
             <p className="auth-subtitle">Sign up to start using your notes app</p>
           </div>
+          {errorMessage && (
+            <div className="alert alert-danger py-2" role="alert">
+              {errorMessage}
+            </div>
+          )}
           <form onSubmit={handleSubmit} noValidate>
             <div className="mb-3">
               <label htmlFor="email" className="form-label">

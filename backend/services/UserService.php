@@ -30,6 +30,10 @@ class UserService
             throw new Exception('Current password, new password and confirm password are required', 422);
         }
 
+        if (strlen($newPassword) < 6) {
+            throw new Exception('New password must be at least 6 characters long', 422);
+        }
+
         if ($newPassword !== $confirmPassword) {
             throw new Exception('New password and confirm password do not match', 422);
         }

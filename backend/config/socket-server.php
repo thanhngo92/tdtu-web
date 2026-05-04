@@ -6,7 +6,7 @@ use Ratchet\Http\HttpServer;
 use Ratchet\WebSocket\WsServer;
 use App\Services\NoteSocket;
 
-$port = 8080;
+$port = getenv('SOCKET_PORT') ?: 8080;
 
 $server = IoServer::factory(
     new HttpServer(

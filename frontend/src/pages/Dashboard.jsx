@@ -9,7 +9,7 @@ import LabelManager from "../components/LabelManager";
 
 export default function Dashboard() {
   const { user, isAuthLoading, refreshAuth } = useAuth();
-  const { notes, sharedNotes, labels, refreshWorkspace, togglePin, deleteNote } = useNotes(refreshAuth);
+  const { notes, setNotes, sharedNotes, labels, refreshWorkspace, togglePin, deleteNote } = useNotes(refreshAuth);
 
   const [activeTab, setActiveTab] = useState("my-notes");
   const [viewMode, setViewMode] = useState("grid");
@@ -149,7 +149,7 @@ export default function Dashboard() {
     if (apiBaseUrl.startsWith("http")) {
       try {
         wsHost = new URL(apiBaseUrl).hostname;
-      } catch (e) {
+      } catch {
         // Fallback to current hostname
       }
     }
@@ -168,7 +168,7 @@ export default function Dashboard() {
         } else if (data.action === "note-pinned" || data.action === "note-updated") {
           refreshWorkspace();
         }
-      } catch (err) {
+      } catch {
         // Silently handle socket message errors in production
       }
     };
@@ -179,7 +179,7 @@ export default function Dashboard() {
         socket.close();
       }
     };
-  }, [refreshWorkspace]);
+  }, [refreshWorkspace, setNotes]);
 
   const closeEditor = useCallback(() => {
     setIsEditorOpen(false);
@@ -221,7 +221,7 @@ export default function Dashboard() {
       if (socketRef.current?.readyState === WebSocket.OPEN) {
         socketRef.current.send(JSON.stringify({ action: "note-pinned", noteId: note.id }));
       }
-    } catch (error) {
+    } catch {
       setNotes(previousNotes);
       alert("Failed to pin note. Please try again.");
     }
@@ -260,7 +260,7 @@ export default function Dashboard() {
       if (selectedNote?.id === note.id) {
         closeEditor();
       }
-    } catch (error) {
+    } catch {
       setNotes(previousNotes);
     }
   };

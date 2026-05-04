@@ -55,10 +55,14 @@ class NoteService
 
     public function createNote($userId, $data)
     {
-        $title = $data['title'] ?? '';
-        $content = $data['content'] ?? '';
+        $title = trim($data['title'] ?? '');
+        $content = trim($data['content'] ?? '');
         $labelIds = $data['labelIds'] ?? [];
         $images = $data['images'] ?? [];
+
+        if ($title === '' && $content === '') {
+            throw new Exception('Note cannot be empty. Please provide a title or content.', 422);
+        }
 
         // Rubrik ID 8: Use user default note color if none provided
         $noteColor = $data['noteColor'] ?? null;
@@ -107,11 +111,15 @@ class NoteService
         $this->db->beginTransaction();
 
         try {
-            $title = $data['title'] ?? '';
-            $content = $data['content'] ?? '';
+            $title = trim($data['title'] ?? '');
+            $content = trim($data['content'] ?? '');
             $noteColor = $data['noteColor'] ?? null;
             $labelIds = $data['labelIds'] ?? [];
             $images = $data['images'] ?? [];
+
+            if ($title === '' && $content === '') {
+                throw new Exception('Note cannot be empty. Please provide a title or content.', 422);
+            }
 
             $success = $this->noteModel->update($id, $userId, $title, $content, $noteColor);
 

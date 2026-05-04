@@ -50,6 +50,7 @@ export default function useNotes(onUnauthorized) {
 
   return {
     notes,
+    setNotes,
     sharedNotes,
     labels,
     refreshWorkspace,

@@ -23,7 +23,7 @@ export default function ForgotPassword() {
     setIsSubmitting(true);
 
     try {
-      const response = await authService.forgotPassword({ email });
+      await authService.forgotPassword({ email });
 
       navigate("/reset-password", { 
         state: { 

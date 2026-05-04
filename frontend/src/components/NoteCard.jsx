@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo } from "react";
 
 /**
  * NoteCard Component

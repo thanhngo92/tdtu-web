@@ -50,7 +50,6 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
   const [isOnline, setIsOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
 
   const saveTimeoutRef = useRef(null);
-  const syncTimeoutRef = useRef(null);
   const lastSavedNoteRef = useRef(note ?? null);
   const socketRef = useRef(null);
   const SOCKET_URL = `ws://${window.location.hostname}:8080`;

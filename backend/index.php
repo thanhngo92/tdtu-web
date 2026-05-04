@@ -31,9 +31,9 @@ session_set_cookie_params([
     'lifetime' => 0,
     'path' => $config['session']['path'],
     'domain' => $config['session']['domain'],
-    'secure' => $config['session']['secure'] || (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'),
+    'secure' => $config['session']['secure'] || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https'),
     'httponly' => $config['session']['httponly'],
-    'samesite' => (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'None' : $config['session']['samesite'],
+    'samesite' => $config['session']['samesite'],
 ]);
 
 session_start();

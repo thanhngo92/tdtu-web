@@ -48,8 +48,12 @@ class MailService
 
                 $mail->Host       = $host;
                 $mail->Port       = $this->config['mail']['smtp']['port'];
-                $mail->Timeout    = 30;
+                $mail->Timeout    = 60;
                 $mail->SMTPKeepAlive = true;
+                $mail->SMTPDebug  = 2; 
+                $mail->Debugoutput = function($str, $level) {
+                    file_put_contents($this->logFile, "[" . date('Y-m-d H:i:s') . "] SMTP DEBUG: $str\n", FILE_APPEND);
+                };
                 $mail->SMTPOptions = [
                     'ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true]
                 ];
@@ -122,6 +126,6 @@ class MailService
 
     private function resolveLogFile(string $logFile): string
     {
-        return (preg_match('/^[A-Za-z]:\\\\|^\//', $logFile) === 1) ? $logFile : __DIR__ . '/../../' . ltrim($logFile, '/\\');
+        return (preg_match('/^[A-Za-z]:\\\\|^\//', $logFile) === 1) ? $logFile : __DIR__ . '/../' . ltrim($logFile, '/\\');
     }
 }

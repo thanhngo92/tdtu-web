@@ -29,6 +29,7 @@ class AuthService
 
         session_regenerate_id(true);
         $_SESSION['user_id'] = $user['id'];
+        session_write_close();
 
         return $this->sanitizeUser($user);
     }
@@ -99,6 +100,7 @@ class AuthService
             // Auto-login after successful registration (Criteria 2.1)
             session_regenerate_id(true);
             $_SESSION['user_id'] = $userId;
+            session_write_close();
             
             // Send activation email (Non-blocking approach)
             try {
