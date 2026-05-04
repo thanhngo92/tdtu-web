@@ -124,6 +124,12 @@ export default function NoteEditor({ note, onClose, onSaveComplete, availableLab
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        if (data.action === "note-deleted" && data.noteId === note.id) {
+          alert("This note has been deleted by another user.");
+          onClose();
+          return;
+        }
+
         if (data.action === "note-updated" && data.noteId === note.id) {
           // Check if we have unsaved changes before overriding
           if (!hasLocalChanges() && !isSaving) {

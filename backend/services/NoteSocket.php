@@ -39,6 +39,8 @@ class NoteSocket implements MessageComponentInterface
                 break;
 
             case 'note-updated':
+            case 'note-deleted':
+            case 'note-pinned':
                 $noteId = $data['noteId'] ?? null;
                 if ($noteId) {
                     $this->broadcastToRoom($from, $noteId, $msg);

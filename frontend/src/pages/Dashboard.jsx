@@ -140,6 +140,38 @@ export default function Dashboard() {
     setIsEditorOpen(true);
   };
 
+  const socketRef = useRef(null);
+
+  // Real-time synchronization (Rubrik ID 24)
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = window.location.hostname;
+    // NoteMate uses port 8080 for WebSocket
+    const socket = new WebSocket(`${protocol}//${host}:8080`);
+    socketRef.current = socket;
+
+    socket.onopen = () => console.log("Dashboard WebSocket Connected");
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.action === "note-deleted") {
+          setNotes((prev) => prev.filter((n) => n.id !== data.noteId));
+        } else if (data.action === "note-pinned" || data.action === "note-updated") {
+          refreshWorkspace();
+        }
+      } catch (err) {
+        console.error("Dashboard WebSocket error", err);
+      }
+    };
+    socket.onclose = () => console.log("Dashboard WebSocket Disconnected");
+
+    return () => {
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        socket.close();
+      }
+    };
+  }, [refreshWorkspace]);
+
   const closeEditor = useCallback(() => {
     setIsEditorOpen(false);
     setSelectedNote(null);
@@ -147,15 +179,27 @@ export default function Dashboard() {
   }, [refreshWorkspace]);
 
   const handleTogglePin = async (note) => {
+    // Optimistic UI update
+    const previousNotes = [...notes];
+    setNotes((prev) =>
+      prev.map((n) =>
+        n.id === note.id
+          ? { ...n, isPinned: !n.isPinned, pinnedAt: !n.isPinned ? new Date().toISOString() : null }
+          : n
+      )
+    );
+
     try {
       if (note.isLocked) {
         if (!isOnline) {
           window.alert("Locked notes can only be updated while online.");
+          setNotes(previousNotes);
           return;
         }
 
         const password = window.prompt("This note is locked. Please enter the password before changing its pin status:");
         if (password === null) {
+          setNotes(previousNotes);
           return;
         }
 
@@ -163,38 +207,53 @@ export default function Dashboard() {
       }
 
       await togglePin(note.id);
+
+      // Broadcast update (Rubrik ID 24)
+      if (socketRef.current?.readyState === WebSocket.OPEN) {
+        socketRef.current.send(JSON.stringify({ action: "note-pinned", noteId: note.id }));
+      }
     } catch (error) {
       console.error("Failed to toggle pin:", error);
+      setNotes(previousNotes);
     }
   };
 
   const handleDeleteNote = async (note) => {
-    // Rubrik ID 13: A confirmation dialog must always be displayed
     if (!window.confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
       return;
     }
 
-    try {
-      let password = null;
-
-      if (note.isLocked) {
-        if (!isOnline) {
-          window.alert("Locked notes can only be deleted while online.");
-          return;
-        }
-
-        password = window.prompt("This note is locked. Please enter the password before deleting:");
-        if (password === null) {
-          return;
-        }
+    let password = null;
+    if (note.isLocked) {
+      if (!isOnline) {
+        window.alert("Locked notes can only be deleted while online.");
+        return;
       }
 
+      password = window.prompt("This note is locked. Please enter the password before deleting:");
+      if (password === null) {
+        return;
+      }
+    }
+
+    // Optimistic UI update
+    const previousNotes = [...notes];
+    setNotes((prev) => prev.filter((n) => n.id !== note.id));
+
+    try {
       await deleteNote(note.id, password);
+
+      // Broadcast deletion (Rubrik ID 24)
+      if (socketRef.current?.readyState === WebSocket.OPEN) {
+        socketRef.current.send(JSON.stringify({ action: "note-deleted", noteId: note.id }));
+      }
+
       if (selectedNote?.id === note.id) {
         closeEditor();
       }
     } catch (error) {
       console.error("Failed to delete note:", error);
+      setNotes(previousNotes);
     }
   };
 
