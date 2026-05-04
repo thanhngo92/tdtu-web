@@ -74,23 +74,24 @@ class MailService
         $appUrl = rtrim($this->config['app']['frontend_url'] ?? '', '/');
         $link = "$appUrl/activate?token=$token";
         
-        $subject = "Activate Your NoteMate Account";
+        $subject = "Verify your NoteMate account";
         $body = "
-            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;'>
-                <h2 style='color: #2d3748;'>Welcome to NoteMate!</h2>
-                <p>Hello <strong>$displayName</strong>,</p>
-                <p>Thank you for joining our community. To get started, please verify your email address by clicking the button below:</p>
-                <div style='text-align: center; margin: 30px 0;'>
-                    <a href='$link' style='background-color: #4a5568; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;'>Activate Account</a>
+            <div style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; color: #1a202c; line-height: 1.6;'>
+                <div style='text-align: center; margin-bottom: 30px;'>
+                    <h1 style='color: #2d3748; margin: 0; font-size: 24px;'>Welcome to NoteMate</h1>
                 </div>
-                <p style='font-size: 0.8em; color: #718096;'>If the button doesn't work, copy and paste this link into your browser:<br>$link</p>
-                <hr style='border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;'>
-                <p style='font-size: 0.8em; color: #a0aec0;'>If you did not register for this account, please ignore this email.</p>
+                <p style='font-size: 16px;'>Hi <strong>$displayName</strong>,</p>
+                <p>Welcome to NoteMate! We're excited to have you on board. To get started and secure your account, please verify your email address by clicking the button below:</p>
+                <div style='text-align: center; margin: 35px 0;'>
+                    <a href='$link' style='background-color: #2d3748; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; display: inline-block;'>Verify Email Address</a>
+                </div>
+                <p style='font-size: 14px; color: #718096;'>This link will expire in 24 hours. If you did not create a NoteMate account, no further action is required.</p>
+                <hr style='border: 0; border-top: 1px solid #edf2f7; margin: 30px 0;'>
+                <p style='font-size: 12px; color: #a0aec0; text-align: center;'>&copy; " . date('Y') . " NoteMate. All rights reserved.</p>
             </div>
         ";
         
-        $this->send($email, $subject, $body);
-        return $link;
+        return $this->send($email, $subject, $body);
     }
 
     public function sendResetPasswordEmail($email, $token, $otp)
@@ -98,47 +99,51 @@ class MailService
         $appUrl = rtrim($this->config['app']['frontend_url'] ?? '', '/');
         $link = "$appUrl/reset-password?token=$token";
         
-        $subject = "Reset Your NoteMate Password";
+        $subject = "Reset your NoteMate password";
         $body = "
-            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;'>
-                <h2 style='color: #2d3748;'>Password Reset Request</h2>
-                <p>Hello,</p>
-                <p>We received a request to reset your password. You can use the link below or enter the OTP manually:</p>
-                <div style='text-align: center; margin: 30px 0;'>
-                    <a href='$link' style='background-color: #e53e3e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;'>Reset Password</a>
+            <div style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; color: #1a202c; line-height: 1.6;'>
+                <div style='text-align: center; margin-bottom: 30px;'>
+                    <h1 style='color: #2d3748; margin: 0; font-size: 24px;'>Password Reset Request</h1>
                 </div>
-                <p style='text-align: center; font-size: 1.2em;'>Your OTP: <strong style='color: #e53e3e; letter-spacing: 2px;'>$otp</strong></p>
-                <p style='font-size: 0.8em; color: #718096; margin-top: 20px;'>The link and OTP will expire in 15 minutes.</p>
-                <hr style='border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;'>
-                <p style='font-size: 0.8em; color: #a0aec0;'>If you did not request this, please ignore this email.</p>
+                <p style='font-size: 16px;'>Hello,</p>
+                <p>We received a request to reset your NoteMate password. You can complete the process by clicking the button below:</p>
+                <div style='text-align: center; margin: 35px 0;'>
+                    <a href='$link' style='background-color: #e53e3e; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; display: inline-block;'>Reset Password</a>
+                </div>
+                <p style='text-align: center; font-size: 15px;'>Or enter this 6-digit OTP code manually:</p>
+                <p style='text-align: center; font-size: 28px; font-weight: bold; color: #2d3748; letter-spacing: 4px; margin: 10px 0;'>$otp</p>
+                <p style='font-size: 14px; color: #718096;'>This link and code will expire in 15 minutes. If you did not request a password reset, you can safely ignore this email.</p>
+                <hr style='border: 0; border-top: 1px solid #edf2f7; margin: 30px 0;'>
+                <p style='font-size: 12px; color: #a0aec0; text-align: center;'>&copy; " . date('Y') . " NoteMate. All rights reserved.</p>
             </div>
         ";
         
-        $this->send($email, $subject, $body);
-        return $link;
+        return $this->send($email, $subject, $body);
     }
 
     public function sendShareNotificationEmail($recipientEmail, $senderName, $noteTitle, $role)
     {
         $roleLabel = ($role === 'edit') ? 'Editor' : 'Viewer';
-        $subject = "A Note has been shared with you: $noteTitle";
+        $subject = "Note Shared: $noteTitle";
         
         $body = "
-            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;'>
-                <h2 style='color: #2d3748;'>New Shared Note</h2>
-                <p>Hello,</p>
-                <p><strong>$senderName</strong> has shared a note with you: <strong>$noteTitle</strong>.</p>
-                <p>You have been given <strong>$roleLabel</strong> permissions.</p>
-                <div style='text-align: center; margin: 30px 0;'>
-                    <a href='{$this->config['app']['frontend_url']}' style='background-color: #38a169; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;'>View Shared Notes</a>
+            <div style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; color: #1a202c; line-height: 1.6;'>
+                <div style='text-align: center; margin-bottom: 30px;'>
+                    <h1 style='color: #2d3748; margin: 0; font-size: 24px;'>New Shared Note</h1>
                 </div>
-                <hr style='border: 0; border-top: 1px solid #e0e0e0; margin: 20px 0;'>
-                <p style='font-size: 0.8em; color: #a0aec0;'>Log in to your NoteMate account to access the shared content.</p>
+                <p style='font-size: 16px;'>Hello,</p>
+                <p><strong>$senderName</strong> has shared a note with you titled: <strong style='color: #2d3748;'>$noteTitle</strong>.</p>
+                <p>You have been given <strong>$roleLabel</strong> access.</p>
+                <div style='text-align: center; margin: 35px 0;'>
+                    <a href='{$this->config['app']['frontend_url']}' style='background-color: #38a169; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; display: inline-block;'>View Shared Note</a>
+                </div>
+                <p style='font-size: 14px; color: #718096;'>Log in to your account to start collaborating.</p>
+                <hr style='border: 0; border-top: 1px solid #edf2f7; margin: 30px 0;'>
+                <p style='font-size: 12px; color: #a0aec0; text-align: center;'>&copy; " . date('Y') . " NoteMate. All rights reserved.</p>
             </div>
         ";
         
-        $this->send($recipientEmail, $subject, $body);
-        return true;
+        return $this->send($recipientEmail, $subject, $body);
     }
 
     private function resolveLogFile(string $logFile): string
